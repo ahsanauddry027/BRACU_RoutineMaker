@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
 // ─── POST /api/routine — Create a new entry ──────────
 router.post('/', async (req, res) => {
   try {
-    const { courseCode, type, section, faculty, room, remainingSeats, days, startSlot, endSlot } =
+    const { courseCode, type, section, faculty, room, examDate, examTime, labFrequency, days, startSlot, endSlot } =
       req.body;
 
     // Server-side conflict check
@@ -63,7 +63,9 @@ router.post('/', async (req, res) => {
       section,
       faculty,
       room,
-      remainingSeats,
+      examDate,
+      examTime,
+      labFrequency,
       days,
       startSlot,
       endSlot,
@@ -83,7 +85,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { courseCode, type, section, faculty, room, remainingSeats, days, startSlot, endSlot } =
+    const { courseCode, type, section, faculty, room, examDate, examTime, labFrequency, days, startSlot, endSlot } =
       req.body;
 
     // Check for conflicts (excluding this entry)
@@ -126,7 +128,7 @@ router.put('/:id', async (req, res) => {
 
     const entry = await RoutineEntry.findByIdAndUpdate(
       id,
-      { courseCode, type, section, faculty, room, remainingSeats, days, startSlot, endSlot },
+      { courseCode, type, section, faculty, room, examDate, examTime, labFrequency, days, startSlot, endSlot },
       { new: true, runValidators: true }
     );
 

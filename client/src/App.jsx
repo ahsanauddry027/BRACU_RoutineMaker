@@ -5,7 +5,7 @@ import ConfirmDialog from './components/ConfirmDialog';
 import ExamSchedule from './components/ExamSchedule';
 import ExamModal from './components/ExamModal';
 import { fetchRoutine, createEntry, updateEntry, deleteEntry, clearAllEntries } from './api/routine';
-import { fetchExams, createExam, updateExam, deleteExam } from './api/exams';
+import { fetchExams, createExam, updateExam, deleteExam, clearAllExams } from './api/exams';
 import { rebuildColorMap, clearColorMap } from './utils/colors';
 import { isFriday } from './constants/schedule';
 
@@ -24,6 +24,7 @@ export default function App() {
 
   // Confirm dialog state
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [examConfirmOpen, setExamConfirmOpen] = useState(false);
 
   // ─── Exam State ─────────────────────────────────────
   const [exams, setExams] = useState([]);
@@ -110,6 +111,37 @@ export default function App() {
           rebuildColorMap(next);
           return next;
         });
+      }
+
+      // Auto-create/update exam entry if exam date is provided
+      if (formData.examDate) {
+        try {
+          const examData = {
+            courseCode: formData.courseCode,
+            examDate: formData.examDate,
+            examTime: formData.examTime || '09:00',
+            room: formData.room,
+            notes: '',
+          };
+
+          // Check if an exam already exists for this course
+          const existingExam = exams.find(
+            (e) => e.courseCode === formData.courseCode
+          );
+
+          if (existingExam) {
+            const examId = existingExam._id || existingExam.id;
+            const updatedExam = await updateExam(examId, examData);
+            setExams((prev) =>
+              prev.map((e) => (e._id || e.id) === examId ? updatedExam : e)
+            );
+          } else {
+            const createdExam = await createExam(examData);
+            setExams((prev) => [...prev, createdExam]);
+          }
+        } catch (examErr) {
+          console.error('Auto-create exam failed:', examErr);
+        }
       }
 
       setStatus('✅ Saved');
@@ -274,6 +306,31 @@ export default function App() {
     setExamModalEntry(null);
   };
 
+  // ─── Clear All Exams ────────────────────────────────
+  const handleClearAllExams = () => {
+    if (exams.length === 0) return;
+    setExamConfirmOpen(true);
+  };
+
+  const confirmClearAllExams = async () => {
+    setExamConfirmOpen(false);
+    try {
+      setStatus('Clearing exams...');
+      setStatusType('saving');
+      await clearAllExams();
+      setExams([]);
+      setStatus('🗑️ All exams cleared');
+      setStatusType('');
+      setTimeout(() => setStatus(''), 2000);
+    } catch (err) {
+      console.error('Clear all exams failed:', err);
+      setExams([]);
+      setStatus('⚠️ Exams cleared locally (server unavailable)');
+      setStatusType('error');
+      setTimeout(() => setStatus(''), 3000);
+    }
+  };
+
   // ─── Render ─────────────────────────────────────────
   return (
     <div className="max-w-[1400px] mx-auto px-4 py-6">
@@ -296,6 +353,7 @@ export default function App() {
         exams={exams}
         onAddExam={handleAddExam}
         onEditExam={handleEditExam}
+        onClearExams={handleClearAllExams}
       />
 
       {/* Class Add/Edit Modal */}
@@ -323,13 +381,23 @@ export default function App() {
         />
       )}
 
-      {/* Clear All Confirm */}
+      {/* Clear All Routine Confirm */}
       {confirmOpen && (
         <ConfirmDialog
           title="Clear Entire Routine?"
           message="This will permanently remove all classes from the schedule. This action cannot be undone."
           onConfirm={confirmClearAll}
           onCancel={() => setConfirmOpen(false)}
+        />
+      )}
+
+      {/* Clear All Exams Confirm */}
+      {examConfirmOpen && (
+        <ConfirmDialog
+          title="Clear All Exams?"
+          message="This will permanently remove all exams from the schedule. This action cannot be undone."
+          onConfirm={confirmClearAllExams}
+          onCancel={() => setExamConfirmOpen(false)}
         />
       )}
     </div>

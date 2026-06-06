@@ -58,10 +58,14 @@ export default function ClassCard({ entry, onClick }) {
         📍 {entry.room}
       </div>
 
-      {/* Remaining seats */}
-      <div className="card-seats">
-        Remaining seats: {entry.remainingSeats}
-      </div>
+      {/* Lab frequency */}
+      {isLab && entry.labFrequency && (
+        <div className="card-frequency">
+          🔄 {entry.labFrequency === 'BIWEEKLY' ? 'Biweekly' : 'Weekly'}
+        </div>
+      )}
+
+
     </div>
   );
 }

@@ -40,10 +40,13 @@ export default function ClassModal({
   const [section, setSection] = useState('');
   const [faculty, setFaculty] = useState('');
   const [room, setRoom] = useState('');
-  const [remainingSeats, setRemainingSeats] = useState('');
+  const [examDate, setExamDate] = useState('');
+  const [examTime, setExamTime] = useState('');
+
 
   // Lab-specific state
   const [labDay, setLabDay] = useState(day || 'Sunday');
+  const [labFrequency, setLabFrequency] = useState('WEEKLY');
   const [labStartSlot, setLabStartSlot] = useState(slotId && slotId <= 6 ? slotId : 1);
 
   // Error state
@@ -57,10 +60,13 @@ export default function ClassModal({
       setSection(String(entry.section || ''));
       setFaculty(entry.faculty || '');
       setRoom(entry.room || '');
-      setRemainingSeats(String(entry.remainingSeats || ''));
+      setExamDate(entry.examDate || '');
+      setExamTime(entry.examTime || '');
+
       if (entry.type === 'LAB') {
         setLabDay(entry.days?.[0] || 'Sunday');
         setLabStartSlot(entry.startSlot || 1);
+        setLabFrequency(entry.labFrequency || 'WEEKLY');
       }
     }
   }, [isEdit, entry]);
@@ -97,10 +103,11 @@ export default function ClassModal({
       setError('Room number is required.');
       return;
     }
-    if (!remainingSeats || isNaN(Number(remainingSeats)) || Number(remainingSeats) < 0) {
-      setError('Please enter a valid number for remaining seats.');
+    if (type === 'THEORY' && !examDate) {
+      setError('Exam date is required.');
       return;
     }
+
 
     const excludeId = isEdit ? (entry._id || entry.id) : null;
 
@@ -128,7 +135,8 @@ export default function ClassModal({
         section: section.trim(),
         faculty: faculty.trim().toUpperCase(),
         room: room.trim().toUpperCase(),
-        remainingSeats: Number(remainingSeats),
+        examDate,
+        examTime,
         days: [theoryDayToUse, paired],
         startSlot: theorySlot,
         endSlot: theorySlot,
@@ -155,7 +163,7 @@ export default function ClassModal({
         section: section.trim(),
         faculty: faculty.trim().toUpperCase(),
         room: room.trim().toUpperCase(),
-        remainingSeats: Number(remainingSeats),
+        labFrequency,
         days: [labDayToUse],
         startSlot: labSlot,
         endSlot: labSlot + 1,
@@ -278,6 +286,24 @@ export default function ClassModal({
                 🕐 Lab will span: <strong>{labTimeRange}</strong> (3 hours)
               </div>
             )}
+
+            <label>Frequency</label>
+            <div className="type-toggle">
+              <button
+                type="button"
+                className={labFrequency === 'WEEKLY' ? 'active' : ''}
+                onClick={() => setLabFrequency('WEEKLY')}
+              >
+                WEEKLY
+              </button>
+              <button
+                type="button"
+                className={labFrequency === 'BIWEEKLY' ? 'active' : ''}
+                onClick={() => setLabFrequency('BIWEEKLY')}
+              >
+                BIWEEKLY
+              </button>
+            </div>
           </>
         )}
 
@@ -311,16 +337,26 @@ export default function ClassModal({
           onChange={(e) => setRoom(e.target.value)}
         />
 
-        {/* Remaining Seats */}
-        <label htmlFor="remainingSeats">Remaining Seats</label>
-        <input
-          id="remainingSeats"
-          type="number"
-          min="0"
-          placeholder="e.g. 35"
-          value={remainingSeats}
-          onChange={(e) => setRemainingSeats(e.target.value)}
-        />
+        {/* Exam Date & Time — Theory only */}
+        {type === 'THEORY' && (
+          <>
+            <label htmlFor="examDate">Exam Date</label>
+            <input
+              id="examDate"
+              type="date"
+              value={examDate}
+              onChange={(e) => setExamDate(e.target.value)}
+            />
+
+            <label htmlFor="examTime">Exam Time (optional)</label>
+            <input
+              id="examTime"
+              type="time"
+              value={examTime}
+              onChange={(e) => setExamTime(e.target.value)}
+            />
+          </>
+        )}
 
         {/* Actions */}
         <div className="modal-actions">

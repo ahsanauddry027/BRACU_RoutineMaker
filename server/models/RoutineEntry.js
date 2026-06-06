@@ -33,10 +33,18 @@ const routineEntrySchema = new mongoose.Schema(
       trim: true,
       uppercase: true,
     },
-    remainingSeats: {
-      type: Number,
-      required: [true, 'Remaining seats is required'],
-      min: [0, 'Remaining seats cannot be negative'],
+    examDate: {
+      type: String,
+      default: '',
+    },
+    examTime: {
+      type: String,
+      default: '',
+    },
+    labFrequency: {
+      type: String,
+      enum: ['WEEKLY', 'BIWEEKLY'],
+      default: 'WEEKLY',
     },
     days: {
       type: [String],

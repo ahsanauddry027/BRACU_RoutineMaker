@@ -9,8 +9,9 @@ import { getCourseColor } from '../utils/colors';
  * - exams: array of exam entries
  * - onAddExam: () => void
  * - onEditExam: (exam) => void
+ * - onClearExams: () => void
  */
-export default function ExamSchedule({ exams, onAddExam, onEditExam }) {
+export default function ExamSchedule({ exams, onAddExam, onEditExam, onClearExams }) {
   // Group exams by date and detect conflicts
   const { groupedExams, conflictDates } = useMemo(() => {
     const groups = {};
@@ -69,9 +70,16 @@ export default function ExamSchedule({ exams, onAddExam, onEditExam }) {
       {/* Header */}
       <div className="exam-header">
         <h2>📋 Exam Schedule</h2>
-        <button className="toolbar-btn btn-add-exam" onClick={onAddExam} id="btn-add-exam">
-          ➕ Add Exam
-        </button>
+        <div className="toolbar-buttons">
+          <button className="toolbar-btn btn-add-exam" onClick={onAddExam} id="btn-add-exam">
+            ➕ Add Exam
+          </button>
+          {exams.length > 0 && (
+            <button className="toolbar-btn btn-clear" onClick={onClearExams} id="btn-clear-exams">
+              🗑️ Clear All
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Conflict legend */}
