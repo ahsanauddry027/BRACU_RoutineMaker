@@ -4,6 +4,8 @@ import cors from 'cors';
 import connectDB from './config/db.js';
 import routineRoutes from './routes/routine.js';
 import examRoutes from './routes/exams.js';
+import courseRoutes from './routes/courses.js';
+import settingsRoutes from './routes/settings.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -15,6 +17,8 @@ app.use(express.json());
 // ─── Routes ───────────────────────────────────────────
 app.use('/api/routine', routineRoutes);
 app.use('/api/exams', examRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // ─── Health Check ─────────────────────────────────────
 app.get('/api/health', (req, res) => {
@@ -39,6 +43,8 @@ const startServer = async () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📡 API available at http://localhost:${PORT}/api/routine`);
     console.log(`📋 Exams API at http://localhost:${PORT}/api/exams`);
+    console.log(`📚 Courses API at http://localhost:${PORT}/api/courses`);
+    console.log(`⚙️  Settings API at http://localhost:${PORT}/api/settings`);
   });
 };
 

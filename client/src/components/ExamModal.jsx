@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { getCourseTitleByCode, getAllCourses } from '../constants/courses';
 
 /**
  * Modal for adding / editing / deleting an exam entry.
@@ -6,11 +7,13 @@ import React, { useState, useEffect } from 'react';
  * Props:
  * - mode: 'add' | 'edit'
  * - exam: existing exam data (for edit mode)
+ * - customCourses: array of { courseCode, courseTitle } from DB
+ * - onAddCustomCourse: (code, title) => Promise
  * - onSave: (formData) => void
  * - onDelete: (examId) => void
  * - onClose: () => void
  */
-export default function ExamModal({ mode, exam, onSave, onDelete, onClose }) {
+export default function ExamModal({ mode, exam, customCourses = [], onAddCustomCourse, onSave, onDelete, onClose }) {
   const isEdit = mode === 'edit';
 
   const [courseCode, setCourseCode] = useState('');
@@ -19,6 +22,31 @@ export default function ExamModal({ mode, exam, onSave, onDelete, onClose }) {
   const [room, setRoom] = useState('');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
+
+  // Dropdown state
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Build merged course list
+  const allCourses = useMemo(() => {
+    const staticCourses = getAllCourses();
+    const merged = { ...staticCourses };
+    for (const c of customCourses) {
+      merged[c.courseCode.toUpperCase()] = c.courseTitle.toUpperCase();
+    }
+    return merged;
+  }, [customCourses]);
+
+  // Filtered dropdown
+  const filteredOptions = useMemo(() => {
+    const search = courseCode.toUpperCase().trim();
+    if (!search) return Object.entries(allCourses).slice(0, 15);
+    return Object.entries(allCourses)
+      .filter(([code, title]) =>
+        code.includes(search) || title.toUpperCase().includes(search)
+      )
+      .slice(0, 15);
+  }, [courseCode, allCourses]);
 
   useEffect(() => {
     if (isEdit && exam) {
@@ -29,6 +57,27 @@ export default function ExamModal({ mode, exam, onSave, onDelete, onClose }) {
       setNotes(exam.notes || '');
     }
   }, [isEdit, exam]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleCourseCodeChange = (value) => {
+    setCourseCode(value.toUpperCase());
+    setShowDropdown(true);
+  };
+
+  const handleSelectCourse = (code) => {
+    setCourseCode(code.toUpperCase());
+    setShowDropdown(false);
+  };
 
   const handleSave = () => {
     setError('');
@@ -87,16 +136,48 @@ export default function ExamModal({ mode, exam, onSave, onDelete, onClose }) {
           </div>
         )}
 
-        {/* Course Code */}
+        {/* Course Code with Dropdown */}
         <label htmlFor="examCourseCode">Course Code</label>
-        <input
-          id="examCourseCode"
-          type="text"
-          placeholder="e.g. CSE420"
-          value={courseCode}
-          onChange={(e) => setCourseCode(e.target.value)}
-          autoFocus
-        />
+        <div className="course-dropdown-wrapper" ref={dropdownRef}>
+          <input
+            id="examCourseCode"
+            type="text"
+            placeholder="Search or type course code..."
+            value={courseCode}
+            onChange={(e) => handleCourseCodeChange(e.target.value)}
+            onFocus={() => setShowDropdown(true)}
+            autoFocus
+            autoComplete="off"
+            style={{ marginBottom: showDropdown ? 0 : undefined }}
+          />
+          {showDropdown && (
+            <div className="course-dropdown">
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map(([code, title]) => (
+                  <div
+                    key={code}
+                    className={`course-dropdown-item ${code === courseCode.toUpperCase().trim() ? 'selected' : ''}`}
+                    onClick={() => handleSelectCourse(code)}
+                  >
+                    <span className="dropdown-code">{code}</span>
+                    <span className="dropdown-title">{title}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="course-dropdown-empty">
+                  No matching course found
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Show matched course title */}
+        {allCourses[courseCode.toUpperCase().trim()] && (
+          <div className="time-preview" style={{ marginTop: '-8px' }}>
+            📚 {allCourses[courseCode.toUpperCase().trim()]}
+          </div>
+        )}
 
         {/* Exam Date */}
         <label htmlFor="examDate">Exam Date</label>
@@ -126,9 +207,9 @@ export default function ExamModal({ mode, exam, onSave, onDelete, onClose }) {
         <input
           id="examRoom"
           type="text"
-          placeholder="e.g. SDU, RFF"
+          placeholder="e.g. 9E25L, 9H33C, 9E21T"
           value={room}
-          onChange={(e) => setRoom(e.target.value)}
+          onChange={(e) => setRoom(e.target.value.toUpperCase())}
         />
 
         {/* Notes */}

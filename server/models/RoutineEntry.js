@@ -8,6 +8,11 @@ const routineEntrySchema = new mongoose.Schema(
       trim: true,
       uppercase: true,
     },
+    courseTitle: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     type: {
       type: String,
       enum: {

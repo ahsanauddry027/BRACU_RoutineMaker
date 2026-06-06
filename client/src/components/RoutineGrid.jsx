@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import html2canvas from 'html2canvas';
-import { TIME_SLOTS, DAYS } from '../constants/schedule';
+import { DAYS } from '../constants/schedule';
 import GridCell from './GridCell';
 
 /**
@@ -8,11 +8,13 @@ import GridCell from './GridCell';
  *
  * Props:
  * - entries: array of all routine entries
+ * - timeSlots: array of { id, start, end } (dynamic)
  * - onCellClick: (day, slotId) => void
  * - onCardClick: (entry) => void
  * - onClearAll: () => void
+ * - onEditTimeSlots: () => void
  */
-export default function RoutineGrid({ entries, onCellClick, onCardClick, onClearAll }) {
+export default function RoutineGrid({ entries, timeSlots, onCellClick, onCardClick, onClearAll, onEditTimeSlots }) {
   const gridRef = useRef(null);
 
   /**
@@ -76,6 +78,14 @@ export default function RoutineGrid({ entries, onCellClick, onCardClick, onClear
         <h1>📅 University Routine Builder</h1>
         <div className="toolbar-buttons">
           <button
+            className="toolbar-btn btn-settings"
+            onClick={onEditTimeSlots}
+            title="Edit time slots"
+            id="btn-edit-timeslots"
+          >
+            ⏰ Time Slots
+          </button>
+          <button
             className="toolbar-btn btn-download"
             onClick={handleDownloadPNG}
             title="Download schedule as PNG"
@@ -106,7 +116,7 @@ export default function RoutineGrid({ entries, onCellClick, onCardClick, onClear
             </tr>
           </thead>
           <tbody>
-            {TIME_SLOTS.map((slot) => (
+            {timeSlots.map((slot) => (
               <tr key={slot.id}>
                 {/* Time column */}
                 <td className="time-cell">
@@ -128,6 +138,7 @@ export default function RoutineGrid({ entries, onCellClick, onCardClick, onClear
                       isLabContinuation={isLabContinuation}
                       onCellClick={onCellClick}
                       onCardClick={onCardClick}
+                      timeSlots={timeSlots}
                     />
                   );
                 })}

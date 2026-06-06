@@ -71,17 +71,29 @@ export function isFriday(day) {
 
 /**
  * Get a slot by its ID.
+ * Optionally pass a custom slots array (for dynamic time slots).
  */
-export function getSlotById(slotId) {
-  return TIME_SLOTS.find((s) => s.id === slotId);
+export function getSlotById(slotId, slots = TIME_SLOTS) {
+  return slots.find((s) => s.id === slotId);
 }
 
 /**
  * Get the merged time range for a lab (startSlot to startSlot+1).
+ * Optionally pass a custom slots array.
  */
-export function getLabTimeRange(startSlotId) {
-  const startSlot = getSlotById(startSlotId);
-  const endSlot = getSlotById(startSlotId + 1);
+export function getLabTimeRange(startSlotId, slots = TIME_SLOTS) {
+  const startSlot = getSlotById(startSlotId, slots);
+  const endSlot = getSlotById(startSlotId + 1, slots);
   if (!startSlot || !endSlot) return null;
   return `${startSlot.start} - ${endSlot.end}`;
+}
+
+/**
+ * Get valid lab start slot IDs from a slots array.
+ * A lab needs 2 consecutive slots, so any slot except the last is valid.
+ */
+export function getLabStartSlots(slots = TIME_SLOTS) {
+  if (!slots || slots.length < 2) return [];
+  // Every slot except the last one can start a lab
+  return slots.slice(0, -1).map((s) => s.id);
 }

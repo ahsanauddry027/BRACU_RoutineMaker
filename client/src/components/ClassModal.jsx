@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   DAYS,
   TIME_SLOTS,
-  LAB_START_SLOTS,
   getPairedDay,
   isFriday,
   getSlotById,
   getLabTimeRange,
+  getLabStartSlots,
 } from '../constants/schedule';
+import { getCourseTitleByCode, getAllCourses } from '../constants/courses';
 import { checkTheoryConflict, checkLabConflict } from '../utils/conflicts';
 
 /**
@@ -19,6 +20,8 @@ import { checkTheoryConflict, checkLabConflict } from '../utils/conflicts';
  * - day: the clicked day (for add mode)
  * - slotId: the clicked slot (for add mode)
  * - entries: all current entries (for conflict checking)
+ * - customCourses: array of { courseCode, courseTitle } from DB
+ * - onAddCustomCourse: (code, title) => Promise
  * - onSave: (formData) => void
  * - onDelete: (entryId) => void
  * - onClose: () => void
@@ -29,6 +32,9 @@ export default function ClassModal({
   day,
   slotId,
   entries,
+  timeSlots = TIME_SLOTS,
+  customCourses = [],
+  onAddCustomCourse,
   onSave,
   onDelete,
   onClose,
@@ -37,6 +43,7 @@ export default function ClassModal({
 
   // Form state
   const [courseCode, setCourseCode] = useState('');
+  const [courseTitle, setCourseTitle] = useState('');
   const [type, setType] = useState('THEORY');
   const [section, setSection] = useState('');
   const [faculty, setFaculty] = useState('');
@@ -44,21 +51,58 @@ export default function ClassModal({
   const [examDate, setExamDate] = useState('');
   const [examTime, setExamTime] = useState('');
 
+  // Compute valid lab start slots based on current timeSlots
+  const labStartSlots = useMemo(() => getLabStartSlots(timeSlots), [timeSlots]);
 
   // Lab-specific state
   const [labDay, setLabDay] = useState(day || 'Sunday');
   const [labFrequency, setLabFrequency] = useState('WEEKLY');
-  const [labStartSlot, setLabStartSlot] = useState(
-    slotId && LAB_START_SLOTS.includes(slotId) ? slotId : LAB_START_SLOTS[0]
-  );
+  const [labStartSlot, setLabStartSlot] = useState(() => {
+    const startSlots = getLabStartSlots(timeSlots);
+    return slotId && startSlots.includes(slotId) ? slotId : (startSlots[0] || 1);
+  });
+
+  // Dropdown state
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showManualTitle, setShowManualTitle] = useState(false);
+  const dropdownRef = useRef(null);
+  const inputRef = useRef(null);
 
   // Error state
   const [error, setError] = useState('');
+
+  // Build merged course list: static dictionary + custom DB courses
+  const allCourses = useMemo(() => {
+    const staticCourses = getAllCourses();
+    const merged = { ...staticCourses };
+
+    // Add custom courses (overrides static if same code)
+    for (const c of customCourses) {
+      merged[c.courseCode.toUpperCase()] = c.courseTitle.toUpperCase();
+    }
+
+    return merged;
+  }, [customCourses]);
+
+  // Filtered dropdown options based on search
+  const filteredOptions = useMemo(() => {
+    const search = courseCode.toUpperCase().trim();
+    if (!search) {
+      // Show first 15 when empty
+      return Object.entries(allCourses).slice(0, 15);
+    }
+    return Object.entries(allCourses)
+      .filter(([code, title]) =>
+        code.includes(search) || title.toUpperCase().includes(search)
+      )
+      .slice(0, 15);
+  }, [courseCode, allCourses]);
 
   // Pre-fill in edit mode
   useEffect(() => {
     if (isEdit && entry) {
       setCourseCode(entry.courseCode || '');
+      setCourseTitle(entry.courseTitle || '');
       setType(entry.type || 'THEORY');
       setSection(String(entry.section || ''));
       setFaculty(entry.faculty || '');
@@ -71,22 +115,69 @@ export default function ClassModal({
         setLabStartSlot(entry.startSlot || 1);
         setLabFrequency(entry.labFrequency || 'WEEKLY');
       }
+
+      // If entry has no courseTitle, try to look it up
+      if (!entry.courseTitle && entry.courseCode) {
+        const looked = getCourseTitleByCode(entry.courseCode);
+        if (looked) setCourseTitle(looked.toUpperCase());
+      }
     }
   }, [isEdit, entry]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // When courseCode changes, auto-lookup title
+  const handleCourseCodeChange = (value) => {
+    const upper = value.toUpperCase();
+    setCourseCode(upper);
+    setShowDropdown(true);
+    setShowManualTitle(false);
+
+    // Auto-fill title from dictionary
+    const title = allCourses[upper.trim()];
+    if (title) {
+      setCourseTitle(title.toUpperCase());
+    } else {
+      setCourseTitle('');
+    }
+  };
+
+  // Select a course from dropdown
+  const handleSelectCourse = (code, title) => {
+    setCourseCode(code.toUpperCase());
+    setCourseTitle(title.toUpperCase());
+    setShowDropdown(false);
+    setShowManualTitle(false);
+  };
+
+  // Handle "Add manually" click
+  const handleAddManually = () => {
+    setShowDropdown(false);
+    setShowManualTitle(true);
+  };
 
   // Derived values
   const pairedDay = type === 'THEORY' && day ? getPairedDay(day) : null;
   const theoryDay = type === 'THEORY' ? day : null;
   const effectiveLabDay = type === 'LAB' ? labDay : null;
   const labEndSlot = labStartSlot + 1;
-  const labTimeRange = type === 'LAB' ? getLabTimeRange(labStartSlot) : null;
+  const labTimeRange = type === 'LAB' ? getLabTimeRange(labStartSlot, timeSlots) : null;
 
-  // For edit mode with theory: derive the "clicked day" from entry.days
+  // For edit mode with theory
   const editTheoryDay = isEdit && entry?.type === 'THEORY' ? entry.days?.[0] : null;
   const displayDay = theoryDay || editTheoryDay;
   const displayPairedDay = displayDay ? getPairedDay(displayDay) : null;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setError('');
 
     // Validation
@@ -111,6 +202,12 @@ export default function ClassModal({
       return;
     }
 
+    // If courseTitle was manually entered (not from dictionary), save to DB
+    const finalCode = courseCode.trim().toUpperCase();
+    const finalTitle = courseTitle.trim().toUpperCase();
+    if (finalTitle && !allCourses[finalCode] && onAddCustomCourse) {
+      await onAddCustomCourse(finalCode, finalTitle);
+    }
 
     const excludeId = isEdit ? (entry._id || entry.id) : null;
 
@@ -118,13 +215,11 @@ export default function ClassModal({
       const theoryDayToUse = displayDay;
       const theorySlot = isEdit ? entry.startSlot : slotId;
 
-      // Friday check
       if (isFriday(theoryDayToUse)) {
         setError('Theory classes cannot be scheduled on Friday. Friday is available for Labs only.');
         return;
       }
 
-      // Conflict check
       const conflict = checkTheoryConflict(entries, theoryDayToUse, theorySlot, excludeId);
       if (conflict.hasConflict) {
         setError(conflict.message);
@@ -133,7 +228,8 @@ export default function ClassModal({
 
       const paired = getPairedDay(theoryDayToUse);
       onSave({
-        courseCode: courseCode.trim().toUpperCase(),
+        courseCode: finalCode,
+        courseTitle: finalTitle,
         type: 'THEORY',
         section: section.trim(),
         faculty: faculty.trim().toUpperCase(),
@@ -149,8 +245,9 @@ export default function ClassModal({
       const labDayToUse = effectiveLabDay || (isEdit ? entry.days?.[0] : 'Sunday');
       const labSlot = isEdit ? (labStartSlot !== entry.startSlot ? labStartSlot : entry.startSlot) : labStartSlot;
 
-      if (labSlot > 6) {
-        setError('Lab must start at slot 6 or earlier (needs 2 consecutive slots).');
+      const maxLabStartSlot = timeSlots.length > 0 ? timeSlots.length - 1 : 6;
+      if (labSlot > maxLabStartSlot) {
+        setError(`Lab must start at slot ${maxLabStartSlot} or earlier (needs 2 consecutive slots).`);
         return;
       }
 
@@ -161,7 +258,8 @@ export default function ClassModal({
       }
 
       onSave({
-        courseCode: courseCode.trim().toUpperCase(),
+        courseCode: finalCode,
+        courseTitle: finalTitle,
         type: 'LAB',
         section: section.trim(),
         faculty: faculty.trim().toUpperCase(),
@@ -174,7 +272,7 @@ export default function ClassModal({
     }
   };
 
-  const currentSlot = getSlotById(slotId || (isEdit ? entry?.startSlot : 1));
+  const currentSlot = getSlotById(slotId || (isEdit ? entry?.startSlot : 1), timeSlots);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -202,7 +300,7 @@ export default function ClassModal({
             <span className="info-icon">📅</span>
             <span>
               Theory on <strong>{displayDay}</strong> &amp; <strong>{displayPairedDay}</strong> at{' '}
-              <strong>{getSlotById(entry.startSlot)?.start} – {getSlotById(entry.startSlot)?.end}</strong>
+              <strong>{getSlotById(entry.startSlot, timeSlots)?.start} – {getSlotById(entry.startSlot, timeSlots)?.end}</strong>
             </span>
           </div>
         )}
@@ -215,16 +313,62 @@ export default function ClassModal({
           </div>
         )}
 
-        {/* Course Code */}
+        {/* Course Code with Dropdown */}
         <label htmlFor="courseCode">Course Code</label>
-        <input
-          id="courseCode"
-          type="text"
-          placeholder="e.g. CSE420"
-          value={courseCode}
-          onChange={(e) => setCourseCode(e.target.value)}
-          autoFocus
-        />
+        <div className="course-dropdown-wrapper" ref={dropdownRef}>
+          <input
+            id="courseCode"
+            ref={inputRef}
+            type="text"
+            placeholder="Search or type course code..."
+            value={courseCode}
+            onChange={(e) => handleCourseCodeChange(e.target.value)}
+            onFocus={() => setShowDropdown(true)}
+            autoFocus
+            autoComplete="off"
+            style={{ marginBottom: showDropdown ? 0 : undefined }}
+          />
+          {showDropdown && (
+            <div className="course-dropdown">
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map(([code, title]) => (
+                  <div
+                    key={code}
+                    className={`course-dropdown-item ${code === courseCode.toUpperCase().trim() ? 'selected' : ''}`}
+                    onClick={() => handleSelectCourse(code, title)}
+                  >
+                    <span className="dropdown-code">{code}</span>
+                    <span className="dropdown-title">{title}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="course-dropdown-empty">
+                  No matching course found
+                </div>
+              )}
+              <div
+                className="course-dropdown-item course-dropdown-add"
+                onClick={handleAddManually}
+              >
+                <span>✏️ Enter course code & title manually</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Course Title (shown when: has a looked-up title, OR manual mode) */}
+        {(courseTitle || showManualTitle) && (
+          <>
+            <label htmlFor="courseTitle">Course Title</label>
+            <input
+              id="courseTitle"
+              type="text"
+              placeholder="e.g. COMPILER DESIGN"
+              value={courseTitle}
+              onChange={(e) => setCourseTitle(e.target.value.toUpperCase())}
+            />
+          </>
+        )}
 
         {/* Type Toggle */}
         <label>Type</label>
@@ -277,10 +421,10 @@ export default function ClassModal({
               onChange={(e) => setLabStartSlot(Number(e.target.value))}
               disabled={isEdit}
             >
-              {LAB_START_SLOTS.map((slotId) => {
-                const range = getLabTimeRange(slotId);
+              {labStartSlots.map((sId) => {
+                const range = getLabTimeRange(sId, timeSlots);
                 return (
-                  <option key={slotId} value={slotId}>
+                  <option key={sId} value={sId}>
                     {range}
                   </option>
                 );
@@ -330,7 +474,7 @@ export default function ClassModal({
           type="text"
           placeholder="e.g. LRK"
           value={faculty}
-          onChange={(e) => setFaculty(e.target.value)}
+          onChange={(e) => setFaculty(e.target.value.toUpperCase())}
         />
 
         {/* Room */}
@@ -338,9 +482,9 @@ export default function ClassModal({
         <input
           id="room"
           type="text"
-          placeholder="e.g. SDU, RFF"
+          placeholder="e.g. 9E25L, 9H33C, 9E21T"
           value={room}
-          onChange={(e) => setRoom(e.target.value)}
+          onChange={(e) => setRoom(e.target.value.toUpperCase())}
         />
 
         {/* Exam Date & Time — Theory only */}

@@ -6,8 +6,11 @@ import ExamSchedule from './components/ExamSchedule';
 import ExamModal from './components/ExamModal';
 import { fetchRoutine, createEntry, updateEntry, deleteEntry, clearAllEntries } from './api/routine';
 import { fetchExams, createExam, updateExam, deleteExam, clearAllExams } from './api/exams';
+import { fetchCourses, createCourse } from './api/courses';
+import { fetchTimeSlots, updateTimeSlots, resetTimeSlots } from './api/settings';
 import { rebuildColorMap, clearColorMap } from './utils/colors';
-import { isFriday } from './constants/schedule';
+import { TIME_SLOTS, isFriday } from './constants/schedule';
+import TimeSlotEditor from './components/TimeSlotEditor';
 
 export default function App() {
   // ─── Routine State ──────────────────────────────────
@@ -32,10 +35,19 @@ export default function App() {
   const [examModalMode, setExamModalMode] = useState('add');
   const [examModalEntry, setExamModalEntry] = useState(null);
 
+  // ─── Courses State ──────────────────────────────────
+  const [customCourses, setCustomCourses] = useState([]);
+
+  // ─── Time Slots State ──────────────────────────────
+  const [timeSlots, setTimeSlots] = useState(TIME_SLOTS);
+  const [timeSlotsEditorOpen, setTimeSlotsEditorOpen] = useState(false);
+
   // ─── Load data on mount ─────────────────────────────
   useEffect(() => {
     loadEntries();
     loadExams();
+    loadCourses();
+    loadTimeSlots();
   }, []);
 
   const loadEntries = async () => {
@@ -61,6 +73,75 @@ export default function App() {
       setExams(data);
     } catch (err) {
       console.error('Failed to load exams:', err);
+    }
+  };
+
+  const loadCourses = async () => {
+    try {
+      const data = await fetchCourses();
+      setCustomCourses(data);
+    } catch (err) {
+      console.error('Failed to load custom courses:', err);
+    }
+  };
+
+  // ─── Add custom course ─────────────────────────────
+  const handleAddCustomCourse = async (courseCode, courseTitle) => {
+    try {
+      const saved = await createCourse({ courseCode, courseTitle });
+      setCustomCourses((prev) => {
+        const exists = prev.find((c) => c.courseCode === saved.courseCode);
+        if (exists) {
+          return prev.map((c) => (c.courseCode === saved.courseCode ? saved : c));
+        }
+        return [...prev, saved];
+      });
+      return saved;
+    } catch (err) {
+      console.error('Failed to save custom course:', err);
+      // Still return a local object so the UI works
+      return { courseCode: courseCode.toUpperCase(), courseTitle: courseTitle.toUpperCase() };
+    }
+  };
+
+  // ─── Time Slots ────────────────────────────────────
+  const loadTimeSlots = async () => {
+    try {
+      const data = await fetchTimeSlots();
+      if (data && data.length > 0) setTimeSlots(data);
+    } catch (err) {
+      console.error('Failed to load time slots:', err);
+    }
+  };
+
+  const handleSaveTimeSlots = async (slots) => {
+    try {
+      setStatus('Saving time slots...');
+      setStatusType('saving');
+      const saved = await updateTimeSlots(slots);
+      setTimeSlots(saved);
+      setTimeSlotsEditorOpen(false);
+      setStatus('✅ Time slots saved');
+      setStatusType('');
+      setTimeout(() => setStatus(''), 2000);
+    } catch (err) {
+      console.error('Failed to save time slots:', err);
+      setStatus('⚠️ Failed to save time slots');
+      setStatusType('error');
+      setTimeout(() => setStatus(''), 3000);
+    }
+  };
+
+  const handleResetTimeSlots = async () => {
+    try {
+      const data = await resetTimeSlots();
+      setTimeSlots(data);
+      setTimeSlotsEditorOpen(false);
+      setStatus('✅ Time slots reset to defaults');
+      setStatusType('');
+      setTimeout(() => setStatus(''), 2000);
+    } catch (err) {
+      console.error('Failed to reset time slots:', err);
     }
   };
 
@@ -336,9 +417,11 @@ export default function App() {
     <div className="max-w-[1400px] mx-auto px-4 py-6">
       <RoutineGrid
         entries={entries}
+        timeSlots={timeSlots}
         onCellClick={handleCellClick}
         onCardClick={handleCardClick}
         onClearAll={handleClearAll}
+        onEditTimeSlots={() => setTimeSlotsEditorOpen(true)}
       />
 
       {/* Status bar */}
@@ -364,6 +447,9 @@ export default function App() {
           day={modalDay}
           slotId={modalSlotId}
           entries={entries}
+          timeSlots={timeSlots}
+          customCourses={customCourses}
+          onAddCustomCourse={handleAddCustomCourse}
           onSave={handleSave}
           onDelete={handleDelete}
           onClose={handleModalClose}
@@ -375,6 +461,8 @@ export default function App() {
         <ExamModal
           mode={examModalMode}
           exam={examModalEntry}
+          customCourses={customCourses}
+          onAddCustomCourse={handleAddCustomCourse}
           onSave={handleExamSave}
           onDelete={handleExamDelete}
           onClose={handleExamModalClose}
@@ -398,6 +486,16 @@ export default function App() {
           message="This will permanently remove all exams from the schedule. This action cannot be undone."
           onConfirm={confirmClearAllExams}
           onCancel={() => setExamConfirmOpen(false)}
+        />
+      )}
+
+      {/* Time Slot Editor Modal */}
+      {timeSlotsEditorOpen && (
+        <TimeSlotEditor
+          timeSlots={timeSlots}
+          onSave={handleSaveTimeSlots}
+          onReset={handleResetTimeSlots}
+          onClose={() => setTimeSlotsEditorOpen(false)}
         />
       )}
     </div>

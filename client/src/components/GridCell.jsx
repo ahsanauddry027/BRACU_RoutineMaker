@@ -25,6 +25,7 @@ export default function GridCell({
   isLabStart,
   onCellClick,
   onCardClick,
+  timeSlots = [],
 }) {
   // If this cell is spanned by a lab starting above, don't render <td>
   if (isLabContinuation) {
@@ -35,7 +36,7 @@ export default function GridCell({
   if (isLabStart && entry) {
     return (
       <td className="lab-cell" rowSpan={2}>
-        <ClassCard entry={entry} onClick={onCardClick} />
+        <ClassCard entry={entry} onClick={onCardClick} timeSlots={timeSlots} />
       </td>
     );
   }
@@ -44,7 +45,7 @@ export default function GridCell({
   if (entry) {
     return (
       <td>
-        <ClassCard entry={entry} onClick={onCardClick} />
+        <ClassCard entry={entry} onClick={onCardClick} timeSlots={timeSlots} />
       </td>
     );
   }
