@@ -59,8 +59,12 @@ export default function RoutineGrid({ entries, timeSlots, onCellClick, onCardCli
       gridRef.current.style.width = '1400px';
       gridRef.current.style.maxWidth = 'none';
 
+      // Warm-up pass: html-to-image sometimes misses fonts on the first render
+      await toPng(gridRef.current, { pixelRatio: 1 }).catch(() => {});
+
+      // High-resolution capture (4x pixel ratio → ~5600px wide)
       const dataUrl = await toPng(gridRef.current, {
-        pixelRatio: 2,
+        pixelRatio: 4,
         backgroundColor: '#0f172a',
         style: {
           borderRadius: '0',
@@ -168,6 +172,11 @@ export default function RoutineGrid({ entries, timeSlots, onCellClick, onCardCli
             ))}
           </tbody>
         </table>
+      </div>
+
+      {/* Signature */}
+      <div className="signature">
+        Created by <span>Ahsan Auddry</span>
       </div>
     </div>
   );

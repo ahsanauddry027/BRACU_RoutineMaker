@@ -12,7 +12,7 @@
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Poppins', 'Inter', system-ui, -apple-system, sans-serif;
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
   min-height: 100vh;
   color: #334155;
@@ -132,21 +132,36 @@ body {
 }
 
 .routine-grid td.friday-cell {
-  background: #e2e8f0 !important; /* Slate-200 darker ash */
+  background: linear-gradient(135deg, #fef9c3, #fde68a) !important;
+  border: 2px solid #f59e0b !important;
   border-style: solid !important;
   cursor: not-allowed !important;
+  position: relative;
 }
 
 .routine-grid td.friday-cell.empty-cell:hover {
-  background: #e2e8f0 !important;
-  border-color: #cbd5e1 !important;
+  background: linear-gradient(135deg, #fef9c3, #fde68a) !important;
+  border-color: #f59e0b !important;
   box-shadow: none !important;
 }
 
-.routine-grid td.friday-cell.empty-cell::after,
+.routine-grid td.friday-cell.empty-cell::after {
+  content: '🌙 HOLIDAY' !important;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #92400e;
+  letter-spacing: 0.1em;
+  opacity: 1 !important;
+  text-transform: uppercase;
+}
+
 .routine-grid td.friday-cell.empty-cell:hover::after {
-  opacity: 0 !important;
-  content: "" !important;
+  opacity: 1 !important;
 }
 
 .routine-grid td.lab-cell {
@@ -293,7 +308,7 @@ body {
   border: 2px solid #e2e8f0;
   border-radius: 10px;
   font-size: 0.9rem;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', 'Inter', sans-serif;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   margin-bottom: 14px;
   outline: none;
@@ -403,7 +418,7 @@ body {
   padding: 10px 16px;
   font-size: 0.85rem;
   font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', 'Inter', sans-serif;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -478,7 +493,7 @@ body {
   border-radius: 10px;
   font-size: 0.9rem;
   font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', 'Inter', sans-serif;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -540,7 +555,7 @@ body {
   border-radius: 10px;
   font-size: 0.85rem;
   font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', 'Inter', sans-serif;
   border: none;
   cursor: pointer;
   display: flex;
@@ -625,7 +640,7 @@ body {
   border-radius: 10px;
   font-size: 0.85rem;
   font-weight: 700;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', 'Inter', sans-serif;
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -979,7 +994,7 @@ body {
   color: #64748b;
   font-size: 0.85rem;
   font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Poppins', 'Inter', sans-serif;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -1007,4 +1022,31 @@ body {
   border-radius: 20px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   margin-bottom: 24px;
+}
+
+/* ───────────────────────────────────────────────
+   Signature / Credit
+   ─────────────────────────────────────────────── */
+.signature {
+  text-align: right;
+  padding: 16px 8px 4px;
+  font-family: 'Dancing Script', cursive;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.02em;
+  transition: color 0.3s ease;
+}
+
+.signature:hover {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.signature span {
+  background: linear-gradient(135deg, #a78bfa, #6366f1, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+  font-size: 1.3rem;
 }
