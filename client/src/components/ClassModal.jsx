@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   DAYS,
   TIME_SLOTS,
+  LAB_START_SLOTS,
   getPairedDay,
   isFriday,
   getSlotById,
@@ -47,7 +48,9 @@ export default function ClassModal({
   // Lab-specific state
   const [labDay, setLabDay] = useState(day || 'Sunday');
   const [labFrequency, setLabFrequency] = useState('WEEKLY');
-  const [labStartSlot, setLabStartSlot] = useState(slotId && slotId <= 6 ? slotId : 1);
+  const [labStartSlot, setLabStartSlot] = useState(
+    slotId && LAB_START_SLOTS.includes(slotId) ? slotId : LAB_START_SLOTS[0]
+  );
 
   // Error state
   const [error, setError] = useState('');
@@ -267,18 +270,21 @@ export default function ClassModal({
               ))}
             </select>
 
-            <label htmlFor="labStartSlot">Start Slot</label>
+            <label htmlFor="labStartSlot">Time Slot</label>
             <select
               id="labStartSlot"
               value={labStartSlot}
               onChange={(e) => setLabStartSlot(Number(e.target.value))}
               disabled={isEdit}
             >
-              {TIME_SLOTS.filter((s) => s.id <= 6).map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.start} – {s.end}
-                </option>
-              ))}
+              {LAB_START_SLOTS.map((slotId) => {
+                const range = getLabTimeRange(slotId);
+                return (
+                  <option key={slotId} value={slotId}>
+                    {range}
+                  </option>
+                );
+              })}
             </select>
 
             {labTimeRange && (

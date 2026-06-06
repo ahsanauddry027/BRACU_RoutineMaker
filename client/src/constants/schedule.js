@@ -9,6 +9,14 @@ export const TIME_SLOTS = [
   { id: 7, start: '05:00 PM', end: '06:30 PM' },
 ];
 
+// ─── Valid Lab Start Slots (3-hour blocks) ────────────
+// Labs span 2 consecutive 1.5-hour slots (= 3 hours)
+// Only 3 valid start positions:
+//   Slot 1 → 08:00 AM – 11:00 AM
+//   Slot 3 → 11:00 AM – 02:00 PM
+//   Slot 5 → 02:00 PM – 05:00 PM
+export const LAB_START_SLOTS = [1, 3, 5];
+
 // ─── Days of the Week ─────────────────────────────────
 export const DAYS = [
   'Sunday',
