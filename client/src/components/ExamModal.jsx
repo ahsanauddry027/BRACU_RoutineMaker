@@ -40,12 +40,12 @@ export default function ExamModal({ mode, exam, customCourses = [], onAddCustomC
   // Filtered dropdown
   const filteredOptions = useMemo(() => {
     const search = courseCode.toUpperCase().trim();
-    if (!search) return Object.entries(allCourses).slice(0, 15);
+    if (!search) return Object.entries(allCourses).slice(0, 100);
     return Object.entries(allCourses)
       .filter(([code, title]) =>
         code.includes(search) || title.toUpperCase().includes(search)
       )
-      .slice(0, 15);
+      .slice(0, 100);
   }, [courseCode, allCourses]);
 
   useEffect(() => {
@@ -236,7 +236,7 @@ export default function ExamModal({ mode, exam, customCourses = [], onAddCustomC
             </button>
           )}
           <button className="btn-save" onClick={handleSave}>
-            {isEdit ? '💾 Update' : '✅ Save'}
+            {isEdit ? 'Update' : 'Save'}
           </button>
         </div>
       </div>

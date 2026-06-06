@@ -157,8 +157,8 @@ export default function TimeSlotEditor({ timeSlots, onSave, onReset, onClose }) 
           >
             ↩️ Reset
           </button>
-          <button className="btn-save" onClick={handleSave}>
-            💾 Save
+           <button className="btn-save" onClick={handleSave}>
+            Save
           </button>
         </div>
       </div>

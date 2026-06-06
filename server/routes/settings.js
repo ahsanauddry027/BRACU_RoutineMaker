@@ -5,13 +5,13 @@ const router = express.Router();
 
 // Default time slots (fallback if DB has none)
 const DEFAULT_TIME_SLOTS = [
-  { id: 1, start: '08:00 AM', end: '09:30 AM' },
-  { id: 2, start: '09:30 AM', end: '11:00 AM' },
-  { id: 3, start: '11:00 AM', end: '12:30 PM' },
-  { id: 4, start: '12:30 PM', end: '02:00 PM' },
-  { id: 5, start: '02:00 PM', end: '03:30 PM' },
-  { id: 6, start: '03:30 PM', end: '05:00 PM' },
-  { id: 7, start: '05:00 PM', end: '06:30 PM' },
+  { id: 1, start: '08:00 AM', end: '09:20 AM' },
+  { id: 2, start: '09:30 AM', end: '10:50 AM' },
+  { id: 3, start: '11:00 AM', end: '12:20 PM' },
+  { id: 4, start: '12:30 PM', end: '01:50 PM' },
+  { id: 5, start: '02:00 PM', end: '03:20 PM' },
+  { id: 6, start: '03:30 PM', end: '04:50 PM' },
+  { id: 7, start: '05:00 PM', end: '06:20 PM' },
 ];
 
 // GET /api/settings/timeslots — Fetch time slots

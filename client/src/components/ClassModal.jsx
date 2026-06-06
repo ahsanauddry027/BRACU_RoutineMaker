@@ -88,14 +88,14 @@ export default function ClassModal({
   const filteredOptions = useMemo(() => {
     const search = courseCode.toUpperCase().trim();
     if (!search) {
-      // Show first 15 when empty
-      return Object.entries(allCourses).slice(0, 15);
+      // Show first 100 when empty
+      return Object.entries(allCourses).slice(0, 100);
     }
     return Object.entries(allCourses)
       .filter(([code, title]) =>
         code.includes(search) || title.toUpperCase().includes(search)
       )
-      .slice(0, 15);
+      .slice(0, 100);
   }, [courseCode, allCourses]);
 
   // Pre-fill in edit mode
@@ -202,10 +202,10 @@ export default function ClassModal({
       return;
     }
 
-    // If courseTitle was manually entered (not from dictionary), save to DB
+    // Always save the course code and title to the database when saving a class
     const finalCode = courseCode.trim().toUpperCase();
     const finalTitle = courseTitle.trim().toUpperCase();
-    if (finalTitle && !allCourses[finalCode] && onAddCustomCourse) {
+    if (finalCode && finalTitle && onAddCustomCourse) {
       await onAddCustomCourse(finalCode, finalTitle);
     }
 
@@ -216,7 +216,7 @@ export default function ClassModal({
       const theorySlot = isEdit ? entry.startSlot : slotId;
 
       if (isFriday(theoryDayToUse)) {
-        setError('Theory classes cannot be scheduled on Friday. Friday is available for Labs only.');
+        setError('Theory classes cannot be scheduled on Friday. Friday is a weekend/off-day.');
         return;
       }
 
@@ -243,6 +243,10 @@ export default function ClassModal({
     } else {
       // LAB
       const labDayToUse = effectiveLabDay || (isEdit ? entry.days?.[0] : 'Sunday');
+      if (isFriday(labDayToUse)) {
+        setError('Lab classes cannot be scheduled on Friday. Friday is a weekend/off-day.');
+        return;
+      }
       const labSlot = isEdit ? (labStartSlot !== entry.startSlot ? labStartSlot : entry.startSlot) : labStartSlot;
 
       const maxLabStartSlot = timeSlots.length > 0 ? timeSlots.length - 1 : 6;
@@ -407,7 +411,7 @@ export default function ClassModal({
               onChange={(e) => setLabDay(e.target.value)}
               disabled={isEdit}
             >
-              {DAYS.map((d) => (
+              {DAYS.filter((d) => d !== 'Friday').map((d) => (
                 <option key={d} value={d}>
                   {d}
                 </option>
@@ -522,7 +526,7 @@ export default function ClassModal({
             </button>
           )}
           <button className="btn-save" onClick={handleSave}>
-            {isEdit ? '💾 Update' : '✅ Save'}
+            {isEdit ? 'Update' : 'Save'}
           </button>
         </div>
       </div>

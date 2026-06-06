@@ -131,6 +131,24 @@ body {
   opacity: 1;
 }
 
+.routine-grid td.friday-cell {
+  background: #e2e8f0 !important; /* Slate-200 darker ash */
+  border-style: solid !important;
+  cursor: not-allowed !important;
+}
+
+.routine-grid td.friday-cell.empty-cell:hover {
+  background: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.routine-grid td.friday-cell.empty-cell::after,
+.routine-grid td.friday-cell.empty-cell:hover::after {
+  opacity: 0 !important;
+  content: "" !important;
+}
+
 .routine-grid td.lab-cell {
   height: 224px;
 }
@@ -175,14 +193,16 @@ body {
 .class-card .type-badge {
   display: inline-flex;
   align-items: center;
-  padding: 1px 8px;
+  justify-content: center;
+  padding: 2px 8px;
   border-radius: 9999px;
   font-size: 0.6rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: #ffffff;
-  width: fit-content;
+  width: 90px;
+  text-align: center;
 }
 
 .class-card .card-info {
@@ -979,4 +999,12 @@ body {
 .toolbar-btn.btn-settings:hover {
   background: rgba(99, 102, 241, 0.8);
   border-color: rgba(99, 102, 241, 0.8);
+}
+
+.routine-capture-area {
+  background: #0f172a;
+  padding: 24px;
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  margin-bottom: 24px;
 }

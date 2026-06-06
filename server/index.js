@@ -1,11 +1,13 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import mongoose from 'mongoose';
 import connectDB from './config/db.js';
 import routineRoutes from './routes/routine.js';
 import examRoutes from './routes/exams.js';
 import courseRoutes from './routes/courses.js';
 import settingsRoutes from './routes/settings.js';
+import Course from './models/Course.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -39,6 +41,50 @@ app.use((err, req, res, next) => {
 // ─── Start ────────────────────────────────────────────
 const startServer = async () => {
   await connectDB();
+  
+  // Clean up any CSE500+ courses from MongoDB
+  try {
+    const deleted = await Course.deleteMany({
+      courseCode: { $regex: /^CSE(5|6|7|8|9)\d+/i }
+    });
+    if (deleted.deletedCount > 0) {
+      console.log(`🧹 Removed ${deleted.deletedCount} CSE500+ courses from database.`);
+    }
+  } catch (cleanErr) {
+    console.error('Failed to clean CSE500+ courses:', cleanErr);
+  }
+
+  // Set/update the global time slots if they match the old defaults
+  try {
+    const Settings = mongoose.model('Settings');
+    const globalSettings = await Settings.findOne({ key: 'global' });
+    
+    const NEW_BANGLA_SLOTS = [
+      { id: 1, start: '08:00 AM', end: '09:20 AM' },
+      { id: 2, start: '09:30 AM', end: '10:50 AM' },
+      { id: 3, start: '11:00 AM', end: '12:20 PM' },
+      { id: 4, start: '12:30 PM', end: '01:50 PM' },
+      { id: 5, start: '02:00 PM', end: '03:20 PM' },
+      { id: 6, start: '03:30 PM', end: '04:50 PM' },
+      { id: 7, start: '05:00 PM', end: '06:20 PM' }
+    ];
+
+    if (!globalSettings) {
+      await Settings.create({ key: 'global', timeSlots: NEW_BANGLA_SLOTS });
+      console.log('✅ Created default Bangladeshi time slots in database.');
+    } else {
+      // Check if any slot has the old 90m block timing
+      const hasOldSlots = globalSettings.timeSlots.some(s => s.start === '09:30 AM' && s.end === '11:00 AM');
+      if (hasOldSlots) {
+        globalSettings.timeSlots = NEW_BANGLA_SLOTS;
+        await globalSettings.save();
+        console.log('🔄 Migrated database time slots to Bangladeshi standard (80-minute blocks).');
+      }
+    }
+  } catch (err) {
+    console.error('Failed to initialize/migrate time slots:', err);
+  }
+
   app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📡 API available at http://localhost:${PORT}/api/routine`);

@@ -51,10 +51,11 @@ export default function GridCell({
   }
 
   // Empty cell
+  const isFriday = day === 'Friday';
   return (
     <td
-      className="empty-cell"
-      onClick={() => onCellClick(day, slotId)}
+      className={`empty-cell ${isFriday ? 'friday-cell disabled-cell' : ''}`}
+      onClick={isFriday ? undefined : () => onCellClick(day, slotId)}
     />
   );
 }

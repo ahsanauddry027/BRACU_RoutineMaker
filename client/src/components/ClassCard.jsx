@@ -55,28 +55,31 @@ export default function ClassCard({ entry, onClick, timeSlots }) {
         </div>
       )}
 
-      {/* Type badge */}
-      <span className="type-badge" style={badgeStyle}>
-        {entry.type}
-      </span>
-
-      {/* Section | Faculty */}
-      <div className="card-info">
-        {entry.section} | {entry.faculty}
+      {/* Badges */}
+      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+        <span className="type-badge" style={badgeStyle}>
+          {entry.type}
+        </span>
+        {isLab && entry.labFrequency && (
+          <span className="type-badge" style={badgeStyle}>
+            {entry.labFrequency}
+          </span>
+        )}
+        {entry.room?.endsWith('T') && (
+          <span className="type-badge" style={badgeStyle}>
+            THEATER
+          </span>
+        )}
+        <span className="type-badge" style={badgeStyle}>
+          SECTION: {entry.section}
+        </span>
+        <span className="type-badge" style={badgeStyle}>
+          FACULTY: {entry.faculty}
+        </span>
+        <span className="type-badge" style={badgeStyle}>
+          ROOM: {entry.room}
+        </span>
       </div>
-
-      {/* Room */}
-      <div className="card-room">
-        📍 {entry.room}
-        {entry.room?.endsWith('T') && <span style={{ marginLeft: 4, fontSize: '0.65rem', opacity: 0.8 }}>🎭 Theater</span>}
-      </div>
-
-      {/* Lab frequency */}
-      {isLab && entry.labFrequency && (
-        <div className="card-frequency">
-          🔄 {entry.labFrequency === 'BIWEEKLY' ? 'Biweekly' : 'Weekly'}
-        </div>
-      )}
     </div>
   );
 }

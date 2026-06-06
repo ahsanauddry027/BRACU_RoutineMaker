@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 import { DAYS } from '../constants/schedule';
 import GridCell from './GridCell';
 
@@ -43,28 +43,50 @@ export default function RoutineGrid({ entries, timeSlots, onCellClick, onCardCli
   };
 
   /**
-   * Download the grid as PNG using html2canvas.
+   * Download the grid as PNG using html-to-image.
    */
   const handleDownloadPNG = async () => {
     if (!gridRef.current) return;
 
     try {
-      const canvas = await html2canvas(gridRef.current, {
-        scale: 2,
-        backgroundColor: '#ffffff',
-        useCORS: true,
-        scrollX: 0,
-        scrollY: 0,
-        width: gridRef.current.scrollWidth,
-        height: gridRef.current.scrollHeight,
-        windowWidth: gridRef.current.scrollWidth,
-        windowHeight: gridRef.current.scrollHeight,
+      // Temporarily expand the grid for capture
+      const wrapper = gridRef.current.querySelector('.routine-grid-wrapper');
+      const origOverflow = wrapper?.style.overflow;
+      const origWidth = gridRef.current.style.width;
+      const origMaxWidth = gridRef.current.style.maxWidth;
+
+      if (wrapper) wrapper.style.overflow = 'visible';
+      gridRef.current.style.width = '1400px';
+      gridRef.current.style.maxWidth = 'none';
+
+      const dataUrl = await toPng(gridRef.current, {
+        pixelRatio: 2,
+        backgroundColor: '#0f172a',
+        style: {
+          borderRadius: '0',
+          boxShadow: 'none',
+        },
+        filter: (node) => {
+          // Exclude the toolbar buttons from the exported image
+          if (node.classList && node.classList.contains('toolbar-buttons')) {
+            return false;
+          }
+          return true;
+        },
       });
 
+      // Restore original styles
+      if (wrapper) wrapper.style.overflow = origOverflow || '';
+      gridRef.current.style.width = origWidth || '';
+      gridRef.current.style.maxWidth = origMaxWidth || '';
+
+      // Download using data URL directly (blob URLs lose the filename)
       const link = document.createElement('a');
       link.download = 'university-routine.png';
-      link.href = canvas.toDataURL('image/png');
+      link.href = dataUrl;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
     } catch (err) {
       console.error('PNG export failed:', err);
       alert('Failed to export as PNG. Please try again.');
@@ -72,7 +94,7 @@ export default function RoutineGrid({ entries, timeSlots, onCellClick, onCardCli
   };
 
   return (
-    <div>
+    <div ref={gridRef} className="routine-capture-area">
       {/* Toolbar */}
       <div className="toolbar">
         <h1>📅 University Routine Builder</h1>
@@ -106,7 +128,7 @@ export default function RoutineGrid({ entries, timeSlots, onCellClick, onCardCli
 
       {/* Grid */}
       <div className="routine-grid-wrapper">
-        <table className="routine-grid" ref={gridRef}>
+        <table className="routine-grid">
           <thead>
             <tr>
               <th>Time</th>
