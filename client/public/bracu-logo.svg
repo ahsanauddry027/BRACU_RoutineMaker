@@ -1,0 +1,23 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="#C41E3A" opacity="0.9"/>
+  <circle cx="50" cy="50" r="45" fill="#E63946"/>
+  
+  <!-- Book/Academic symbol -->
+  <g transform="translate(50, 50)">
+    <!-- Left page -->
+    <path d="M -8,-6 L -2,-6 L -2,8 L -8,8 Z" fill="white" opacity="0.9"/>
+    <!-- Right page -->
+    <path d="M 2,-6 L 8,-6 L 8,8 L 2,8 Z" fill="white"/>
+    <!-- Book spine -->
+    <rect x="-2" y="-6" width="4" height="14" fill="#C41E3A"/>
+  </g>
+  
+  <!-- Text ring -->
+  <defs>
+    <path id="circlePath" d="M 20, 50 A 30, 30 0 0, 1 80, 50" fill="none"/>
+  </defs>
+  
+  <!-- Optional: Outer ring -->
+  <circle cx="50" cy="50" r="48" fill="none" stroke="white" stroke-width="1.5" opacity="0.5"/>
+</svg>

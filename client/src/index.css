@@ -545,6 +545,19 @@ body {
   letter-spacing: -0.02em;
 }
 
+.header-with-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bracu-logo {
+  height: 48px;
+  width: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
 .toolbar-buttons {
   display: flex;
   gap: 10px;

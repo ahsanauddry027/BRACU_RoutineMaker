@@ -1,6 +1,6 @@
-# 📅 University Class Routine Builder
+# 🎓 BRACU Routine Builder
 
-A full-stack MERN application for building university class schedules with automatic paired-day theory logic, lab spanning, conflict detection, and PNG export.
+A full-stack MERN application for building BRACU (BRAC University) class schedules with automatic paired-day theory logic, lab spanning, conflict detection, and PNG export.
 
 ![MERN Stack](https://img.shields.io/badge/Stack-MERN-green)
 ![License](https://img.shields.io/badge/License-MIT-blue)

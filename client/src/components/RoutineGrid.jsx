@@ -86,7 +86,7 @@ export default function RoutineGrid({ entries, timeSlots, onCellClick, onCardCli
 
       // Download using data URL directly (blob URLs lose the filename)
       const link = document.createElement('a');
-      link.download = 'university-routine.png';
+      link.download = 'bracu-routine.png';
       link.href = dataUrl;
       document.body.appendChild(link);
       link.click();
@@ -101,7 +101,10 @@ export default function RoutineGrid({ entries, timeSlots, onCellClick, onCardCli
     <div ref={gridRef} className="routine-capture-area">
       {/* Toolbar */}
       <div className="toolbar">
-        <h1>📅 University Routine Builder</h1>
+        <div className="header-with-logo">
+          <img src="/bracu-logo.svg" alt="BRACU Logo" className="bracu-logo" />
+          <h1>BRACU Routine Builder</h1>
+        </div>
         <div className="toolbar-buttons">
           <button
             className="toolbar-btn btn-settings"
@@ -109,7 +112,7 @@ export default function RoutineGrid({ entries, timeSlots, onCellClick, onCardCli
             title="Edit time slots"
             id="btn-edit-timeslots"
           >
-            ⏰ Time Slots
+            Time Slots
           </button>
           <button
             className="toolbar-btn btn-download"
@@ -117,7 +120,7 @@ export default function RoutineGrid({ entries, timeSlots, onCellClick, onCardCli
             title="Download schedule as PNG"
             id="btn-download-png"
           >
-            📥 Download PNG
+            Download PNG
           </button>
           <button
             className="toolbar-btn btn-clear"
@@ -125,7 +128,7 @@ export default function RoutineGrid({ entries, timeSlots, onCellClick, onCardCli
             title="Clear all classes"
             id="btn-clear-all"
           >
-            🗑️ Clear All
+            Clear All
           </button>
         </div>
       </div>
