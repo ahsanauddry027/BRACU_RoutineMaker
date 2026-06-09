@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   DAYS,
   TIME_SLOTS,
+  LAB_START_SLOTS,
   getPairedDay,
   isFriday,
   getSlotById,
@@ -52,14 +53,30 @@ export default function ClassModal({
   const [examTime, setExamTime] = useState('');
 
   // Compute valid lab start slots based on current timeSlots
-  const labStartSlots = useMemo(() => getLabStartSlots(timeSlots), [timeSlots]);
+  const labStartSlots = useMemo(() => LAB_START_SLOTS, []);
+
+  // Function to map any clicked slot to the nearest valid lab start slot
+  const getLabStartSlotFromClickedSlot = (clickedSlot) => {
+    // Map slots to their corresponding lab start slots:
+    // Slots 1-2 → slot 1 (8-11 AM)
+    // Slots 3-4 → slot 3 (11-2 PM)
+    // Slots 5-6 → slot 5 (2-5 PM)
+    // Slot 7+ → slot 5 (latest available)
+    if (clickedSlot <= 2) return 1;
+    if (clickedSlot <= 4) return 3;
+    return 5;
+  };
 
   // Lab-specific state
   const [labDay, setLabDay] = useState(day || 'Sunday');
   const [labFrequency, setLabFrequency] = useState('WEEKLY');
   const [labStartSlot, setLabStartSlot] = useState(() => {
-    const startSlots = getLabStartSlots(timeSlots);
-    return slotId && startSlots.includes(slotId) ? slotId : (startSlots[0] || 1);
+    if (slotId && LAB_START_SLOTS.includes(slotId)) {
+      return slotId; // If clicked slot is already a valid start slot, use it
+    } else if (slotId) {
+      return getLabStartSlotFromClickedSlot(slotId); // Map to nearest valid start slot
+    }
+    return LAB_START_SLOTS[0] || 1; // Default to first slot
   });
 
   // Dropdown state
@@ -249,6 +266,12 @@ export default function ClassModal({
       }
       const labSlot = isEdit ? (labStartSlot !== entry.startSlot ? labStartSlot : entry.startSlot) : labStartSlot;
 
+      // Validate that lab only starts from allowed slots (1, 3, 5)
+      if (!LAB_START_SLOTS.includes(labSlot)) {
+        setError(`Labs can only start from slots: ${LAB_START_SLOTS.map(slot => getSlotById(slot, timeSlots)?.start).join(', ')}`);
+        return;
+      }
+
       const maxLabStartSlot = timeSlots.length > 0 ? timeSlots.length - 1 : 6;
       if (labSlot > maxLabStartSlot) {
         setError(`Lab must start at slot ${maxLabStartSlot} or earlier (needs 2 consecutive slots).`);
@@ -394,6 +417,10 @@ export default function ClassModal({
             onClick={() => {
               setType('LAB');
               setError('');
+              // When switching to LAB, remap the slot to nearest valid lab start slot
+              if (!LAB_START_SLOTS.includes(slotId)) {
+                setLabStartSlot(getLabStartSlotFromClickedSlot(slotId || 1));
+              }
             }}
             disabled={isEdit}
           >

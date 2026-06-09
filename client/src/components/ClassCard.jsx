@@ -23,7 +23,7 @@ export default function ClassCard({ entry, onClick, timeSlots }) {
   };
 
   const badgeStyle = {
-    backgroundColor: color.badge,
+    color: color.text,
   };
 
   return (

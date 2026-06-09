@@ -82,7 +82,7 @@ body {
   border-radius: 4px;
   padding: 6px;
   vertical-align: top;
-  height: 110px;
+  height: 150px;
   transition: background-color 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -165,7 +165,11 @@ body {
 }
 
 .routine-grid td.lab-cell {
-  height: 224px;
+  height: 304px;
+}
+
+.routine-grid tbody tr:not(:last-child) td.time-cell {
+  border-bottom: 3px solid #dc2626;
 }
 
 /* ───────────────────────────────────────────────
@@ -173,15 +177,18 @@ body {
    ─────────────────────────────────────────────── */
 .class-card {
   border-radius: 4px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 5px;
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
   position: relative;
   overflow: hidden;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
 }
 
 .class-card:hover {
@@ -201,7 +208,7 @@ body {
 
 .class-card .course-code {
   font-weight: 800;
-  font-size: 0.9rem;
+  font-size: 1.1rem;
   letter-spacing: 0.02em;
 }
 
@@ -209,15 +216,17 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 8px;
-  border-radius: 9999px;
-  font-size: 0.6rem;
-  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 0px;
+  font-size: 0.8rem;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #ffffff;
-  width: 90px;
+  letter-spacing: 0.06em;
+  color: inherit;
+  width: auto;
   text-align: center;
+  line-height: 1.3;
+  margin: 0 auto;
 }
 
 .class-card .card-info {
@@ -227,14 +236,17 @@ body {
 }
 
 .class-card .card-title {
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  opacity: 0.75;
+  opacity: 0.85;
   line-height: 1.2;
   letter-spacing: 0.02em;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-word;
 }
 
 .class-card .card-room {
@@ -251,10 +263,10 @@ body {
 }
 
 .class-card .lab-time-range {
-  font-size: 0.65rem;
-  font-weight: 600;
-  color: #475569;
-  margin-bottom: 2px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 3px;
 }
 
 /* ───────────────────────────────────────────────

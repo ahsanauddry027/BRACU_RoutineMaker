@@ -1,5 +1,6 @@
 import express from 'express';
 import RoutineEntry from '../models/RoutineEntry.js';
+import ExamEntry from '../models/ExamEntry.js';
 
 const router = express.Router();
 
@@ -19,6 +20,14 @@ router.post('/', async (req, res) => {
   try {
     const { courseCode, courseTitle, type, section, faculty, room, examDate, examTime, labFrequency, days, startSlot, endSlot } =
       req.body;
+
+    // Validate lab start slots (labs can only start from slots 1, 3, 5)
+    const LAB_START_SLOTS = [1, 3, 5];
+    if (type === 'LAB' && !LAB_START_SLOTS.includes(startSlot)) {
+      return res.status(400).json({
+        error: `Labs can only start from time slots 1 (8-11 AM), 3 (11-2 PM), or 5 (2-5 PM). Received slot ${startSlot}.`,
+      });
+    }
 
     // Server-side conflict check
     const conflictQuery = {
@@ -89,6 +98,14 @@ router.put('/:id', async (req, res) => {
     const { courseCode, courseTitle, type, section, faculty, room, examDate, examTime, labFrequency, days, startSlot, endSlot } =
       req.body;
 
+    // Validate lab start slots (labs can only start from slots 1, 3, 5)
+    const LAB_START_SLOTS = [1, 3, 5];
+    if (type === 'LAB' && !LAB_START_SLOTS.includes(startSlot)) {
+      return res.status(400).json({
+        error: `Labs can only start from time slots 1 (8-11 AM), 3 (11-2 PM), or 5 (2-5 PM). Received slot ${startSlot}.`,
+      });
+    }
+
     // Check for conflicts (excluding this entry)
     if (days && startSlot) {
       const conflictQuery = {
@@ -151,11 +168,20 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const entry = await RoutineEntry.findByIdAndDelete(id);
-
+    
+    // Retrieve the entry first to check its type
+    const entry = await RoutineEntry.findById(id);
     if (!entry) {
       return res.status(404).json({ error: 'Entry not found' });
     }
+
+    // If it's a THEORY course, delete associated exams
+    if (entry.type === 'THEORY') {
+      await ExamEntry.deleteMany({ courseCode: entry.courseCode });
+    }
+
+    // Delete the routine entry
+    await RoutineEntry.findByIdAndDelete(id);
 
     res.json({ message: 'Entry deleted', entry });
   } catch (err) {
@@ -167,6 +193,18 @@ router.delete('/:id', async (req, res) => {
 // ─── DELETE /api/routine — Clear all entries ─────────
 router.delete('/', async (req, res) => {
   try {
+    // Get all THEORY entries
+    const theoryEntries = await RoutineEntry.find({ type: 'THEORY' });
+    
+    // Collect all unique course codes
+    const courseCodeSet = new Set(theoryEntries.map(e => e.courseCode));
+    
+    // Delete all exams for these course codes
+    if (courseCodeSet.size > 0) {
+      await ExamEntry.deleteMany({ courseCode: { $in: Array.from(courseCodeSet) } });
+    }
+    
+    // Delete all routine entries
     const result = await RoutineEntry.deleteMany({});
     res.json({ message: 'All entries cleared', deletedCount: result.deletedCount });
   } catch (err) {

@@ -267,6 +267,10 @@ export default function App() {
         rebuildColorMap(next);
         return next;
       });
+      
+      // Reload exams in case associated exams were deleted
+      await loadExams();
+      
       setStatus('🗑️ Deleted');
       setStatusType('');
       setTimeout(() => setStatus(''), 2000);
@@ -300,6 +304,10 @@ export default function App() {
       await clearAllEntries();
       setEntries([]);
       clearColorMap();
+      
+      // Reload exams in case associated exams were deleted
+      await loadExams();
+      
       setStatus('🗑️ All classes cleared');
       setStatusType('');
       setTimeout(() => setStatus(''), 2000);
