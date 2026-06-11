@@ -469,12 +469,10 @@ export default function ClassModal({
                     className={`course-dropdown-item ${option.code === courseCode.toUpperCase().trim() ? 'selected' : ''}`}
                     onClick={() => handleSelectCourse(option)}
                   >
-                    // Course display
                     <>
                       <span className="dropdown-code">{option.code}</span>
                       <span className="dropdown-title">{option.title}</span>
                     </>
-
                   </div>
                 ))
               ) : (
