@@ -11,6 +11,7 @@ import {
 } from '../constants/schedule';
 import { getCourseTitleByCode, getAllCourses } from '../constants/courses';
 import { checkTheoryConflict, checkLabConflict } from '../utils/conflicts';
+import { fetchCourseCatalog } from '../api/courses';
 
 /**
  * Modal for adding / editing / deleting a class entry.
@@ -22,6 +23,7 @@ import { checkTheoryConflict, checkLabConflict } from '../utils/conflicts';
  * - slotId: the clicked slot (for add mode)
  * - entries: all current entries (for conflict checking)
  * - customCourses: array of { courseCode, courseTitle } from DB
+ * - catalogCourses: array of courses from external API (USIS)
  * - onAddCustomCourse: (code, title) => Promise
  * - onSave: (formData) => void
  * - onDelete: (entryId) => void
@@ -35,6 +37,7 @@ export default function ClassModal({
   entries,
   timeSlots = TIME_SLOTS,
   customCourses = [],
+  catalogCourses = [],
   onAddCustomCourse,
   onSave,
   onDelete,
@@ -81,14 +84,30 @@ export default function ClassModal({
 
   // Dropdown state
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showSectionDropdown, setShowSectionDropdown] = useState(false);
   const [showManualTitle, setShowManualTitle] = useState(false);
   const dropdownRef = useRef(null);
+  const sectionDropdownRef = useRef(null);
   const inputRef = useRef(null);
 
   // Error state
   const [error, setError] = useState('');
+  const [localCatalogCourses, setLocalCatalogCourses] = useState(catalogCourses || []);
 
-  // Build merged course list: static dictionary + custom DB courses
+  // Group catalog courses by courseCode for section lookup
+  const coursesByCode = useMemo(() => {
+    const grouped = {};
+    for (const course of localCatalogCourses) {
+      const code = course.courseCode.toUpperCase();
+      if (!grouped[code]) {
+        grouped[code] = [];
+      }
+      grouped[code].push(course);
+    }
+    return grouped;
+  }, [localCatalogCourses]);
+
+  // Build merged course list: static dictionary + custom DB courses + catalog courses
   const allCourses = useMemo(() => {
     const staticCourses = getAllCourses();
     const merged = { ...staticCourses };
@@ -98,21 +117,44 @@ export default function ClassModal({
       merged[c.courseCode.toUpperCase()] = c.courseTitle.toUpperCase();
     }
 
-    return merged;
-  }, [customCourses]);
+    // Add catalog courses (overrides if same code)
+    for (const c of localCatalogCourses) {
+      const code = c.courseCode.toUpperCase();
+      const title = c.courseTitle.toUpperCase();
+      if (!merged[code]) {
+        merged[code] = title;
+      }
+    }
 
-  // Filtered dropdown options based on search
+    return merged;
+  }, [customCourses, localCatalogCourses]);
+
+  // Get available sections for selected course
+  const availableSections = useMemo(() => {
+    const search = courseCode.toUpperCase().trim();
+    if (!search) return [];
+    
+    const sections = coursesByCode[search] || [];
+    return sections.slice(0, 50); // Limit to 50 sections
+  }, [courseCode, coursesByCode]);
+
+  // Filtered dropdown options based on search - only courses now
   const filteredOptions = useMemo(() => {
     const search = courseCode.toUpperCase().trim();
+    
+    // Always show courses only in the course code dropdown
     if (!search) {
-      // Show first 100 when empty
-      return Object.entries(allCourses).slice(0, 100);
+      return Object.entries(allCourses)
+        .slice(0, 100)
+        .map(([code, title]) => ({ type: 'course', code, title }));
     }
+    
     return Object.entries(allCourses)
       .filter(([code, title]) =>
         code.includes(search) || title.toUpperCase().includes(search)
       )
-      .slice(0, 100);
+      .slice(0, 100)
+      .map(([code, title]) => ({ type: 'course', code, title }));
   }, [courseCode, allCourses]);
 
   // Pre-fill in edit mode
@@ -147,10 +189,29 @@ export default function ClassModal({
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setShowDropdown(false);
       }
+      if (sectionDropdownRef.current && !sectionDropdownRef.current.contains(e.target)) {
+        setShowSectionDropdown(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Fetch catalog if not provided by parent or if empty on mount
+  useEffect(() => {
+    // Always try to fetch from the API if localCatalogCourses is empty
+    if (localCatalogCourses.length === 0) {
+      fetchCourseCatalog()
+        .then(data => {
+          if (data && data.length > 0) {
+            setLocalCatalogCourses(data);
+          }
+        })
+        .catch(err => {
+          console.error('Failed to fetch catalog in ClassModal:', err);
+        });
+    }
+  }, []); // Empty dependency array - run once on mount
 
   // When courseCode changes, auto-lookup title
   const handleCourseCodeChange = (value) => {
@@ -168,12 +229,39 @@ export default function ClassModal({
     }
   };
 
-  // Select a course from dropdown
-  const handleSelectCourse = (code, title) => {
-    setCourseCode(code.toUpperCase());
-    setCourseTitle(title.toUpperCase());
-    setShowDropdown(false);
-    setShowManualTitle(false);
+  // Select a course from dropdown (course code field)
+  const handleSelectCourse = (option) => {
+    if (option.type === 'section') {
+      // This shouldn't happen from course dropdown anymore
+      setCourseCode(option.code.toUpperCase());
+      setCourseTitle(allCourses[option.code.toUpperCase()] || '');
+      setShowDropdown(false);
+      setShowManualTitle(false);
+    } else {
+      // Course selected - just set code and title
+      setCourseCode(option.code.toUpperCase());
+      setCourseTitle(option.title.toUpperCase());
+      setShowDropdown(false);
+      setShowManualTitle(false);
+    }
+  };
+
+  // Select a section from the section dropdown
+  const handleSelectSection = (sectionOption) => {
+    setSection(sectionOption.sectionName || '');
+    setFaculty(sectionOption.instructor || '');
+    
+    // Extract room from schedule (first schedule item if available)
+    const room = sectionOption.schedule?.[0]?.room || '';
+    setRoom(room);
+    
+    // Set exam date (convert null to empty string)
+    setExamDate(sectionOption.examDate || '');
+    
+    // Set exam time (convert null to empty string)
+    setExamTime(sectionOption.examStartTime || '');
+    
+    setShowSectionDropdown(false);
   };
 
   // Handle "Add manually" click
@@ -214,10 +302,7 @@ export default function ClassModal({
       setError('Room number is required.');
       return;
     }
-    if (type === 'THEORY' && !examDate) {
-      setError('Exam date is required.');
-      return;
-    }
+    // Exam date is optional for theory classes (exam time is always optional)
 
     // Always save the course code and title to the database when saving a class
     const finalCode = courseCode.trim().toUpperCase();
@@ -355,17 +440,21 @@ export default function ClassModal({
             autoComplete="off"
             style={{ marginBottom: showDropdown ? 0 : undefined }}
           />
-          {showDropdown && (
+        {showDropdown && (
             <div className="course-dropdown">
               {filteredOptions.length > 0 ? (
-                filteredOptions.map(([code, title]) => (
+                filteredOptions.map((option, idx) => (
                   <div
-                    key={code}
-                    className={`course-dropdown-item ${code === courseCode.toUpperCase().trim() ? 'selected' : ''}`}
-                    onClick={() => handleSelectCourse(code, title)}
+                    key={option.type === 'section' ? `sec-${option.sectionId}` : `course-${option.code}`}
+                    className={`course-dropdown-item ${option.code === courseCode.toUpperCase().trim() ? 'selected' : ''}`}
+                    onClick={() => handleSelectCourse(option)}
                   >
-                    <span className="dropdown-code">{code}</span>
-                    <span className="dropdown-title">{title}</span>
+                    // Course display
+                    <>
+                      <span className="dropdown-code">{option.code}</span>
+                      <span className="dropdown-title">{option.title}</span>
+                    </>
+
                   </div>
                 ))
               ) : (
@@ -488,15 +577,56 @@ export default function ClassModal({
           </>
         )}
 
-        {/* Section */}
+        {/* Section - Dropdown if sections available, otherwise text input */}
         <label htmlFor="section">Section</label>
-        <input
-          id="section"
-          type="text"
-          placeholder="e.g. 13"
-          value={section}
-          onChange={(e) => setSection(e.target.value)}
-        />
+        {availableSections.length > 0 ? (
+          <div className="course-dropdown-wrapper" ref={sectionDropdownRef}>
+            <input
+              id="section"
+              type="text"
+              placeholder="Select section..."
+              value={section}
+              onChange={(e) => setSection(e.target.value)}
+              autoComplete="off"
+              style={{ marginBottom: availableSections.length > 0 ? 0 : undefined }}
+            />
+            <div className="course-dropdown">
+              {availableSections.map((sec) => {
+                const roomFromSchedule = sec.schedule?.[0]?.room || 'TBD';
+                return (
+                  <div
+                    key={`section-${sec.sectionId}`}
+                    className="course-dropdown-item"
+                    onClick={() => handleSelectSection(sec)}
+                  >
+                    <div className="section-item">
+                      <div className="section-header">
+                        <span className="dropdown-code">{sec.courseCode}</span>
+                        <span className="section-name">Sec {sec.sectionName}</span>
+                      </div>
+                      <div className="section-details">
+                        <span className="detail-label">Instructor:</span>
+                        <span className="detail-value">{sec.instructor || 'N/A'}</span>
+                        <span className="detail-label">Room:</span>
+                        <span className="detail-value">{roomFromSchedule}</span>
+                        <span className="detail-label">Exam:</span>
+                        <span className="detail-value">{sec.examDate || 'TBD'} {sec.examStartTime || 'N/A'}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <input
+            id="section"
+            type="text"
+            placeholder="e.g. 13"
+            value={section}
+            onChange={(e) => setSection(e.target.value)}
+          />
+        )}
 
         {/* Faculty */}
         <label htmlFor="faculty">Faculty Initials</label>

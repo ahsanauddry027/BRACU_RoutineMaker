@@ -6,7 +6,7 @@ import ExamSchedule from './components/ExamSchedule';
 import ExamModal from './components/ExamModal';
 import { fetchRoutine, createEntry, updateEntry, deleteEntry, clearAllEntries } from './api/routine';
 import { fetchExams, createExam, updateExam, deleteExam, clearAllExams } from './api/exams';
-import { fetchCourses, createCourse } from './api/courses';
+import { fetchCourses, createCourse, fetchCourseCatalog } from './api/courses';
 import { fetchTimeSlots, updateTimeSlots, resetTimeSlots } from './api/settings';
 import { rebuildColorMap, clearColorMap } from './utils/colors';
 import { TIME_SLOTS, isFriday } from './constants/schedule';
@@ -37,6 +37,7 @@ export default function App() {
 
   // ─── Courses State ──────────────────────────────────
   const [customCourses, setCustomCourses] = useState([]);
+  const [catalogCourses, setCatalogCourses] = useState([]);
 
   // ─── Time Slots State ──────────────────────────────
   const [timeSlots, setTimeSlots] = useState(TIME_SLOTS);
@@ -47,6 +48,7 @@ export default function App() {
     loadEntries();
     loadExams();
     loadCourses();
+    loadCatalog();
     loadTimeSlots();
   }, []);
 
@@ -82,6 +84,17 @@ export default function App() {
       setCustomCourses(data);
     } catch (err) {
       console.error('Failed to load custom courses:', err);
+    }
+  };
+
+  const loadCatalog = async () => {
+    try {
+      const data = await fetchCourseCatalog();
+      setCatalogCourses(data);
+      console.log(`✅ Loaded ${data.length} courses from catalog`);
+    } catch (err) {
+      console.error('Failed to load course catalog:', err);
+      // Don't show error to user — catalog is optional
     }
   };
 
@@ -457,6 +470,7 @@ export default function App() {
           entries={entries}
           timeSlots={timeSlots}
           customCourses={customCourses}
+          catalogCourses={catalogCourses}
           onAddCustomCourse={handleAddCustomCourse}
           onSave={handleSave}
           onDelete={handleDelete}

@@ -355,7 +355,7 @@ body {
   border: 2px solid #e2e8f0;
   border-top: none;
   border-radius: 0 0 10px 10px;
-  max-height: 240px;
+  max-height: 400px;
   overflow-y: auto;
   z-index: 50;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
@@ -363,12 +363,22 @@ body {
 
 .course-dropdown-item {
   display: flex;
-  align-items: center;
   gap: 10px;
-  padding: 8px 14px;
+  padding: 8px 12px;
   cursor: pointer;
   transition: background 0.12s ease;
   border-bottom: 1px solid #f1f5f9;
+}
+
+.course-dropdown-item.course-dropdown-add {
+  flex-direction: row;
+  align-items: center;
+}
+
+.course-dropdown-item > span {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .course-dropdown-item:hover {
@@ -414,6 +424,52 @@ body {
 
 .course-dropdown-add:hover {
   background: #eff6ff;
+}
+
+/* Section Item Styles */
+.section-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.section-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.section-name {
+  font-size: 0.75rem;
+  color: #475569;
+  font-weight: 600;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.section-details {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 8px;
+  font-size: 0.7rem;
+  padding: 4px 0;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 6px;
+}
+
+.detail-label {
+  color: #7c3aed;
+  font-weight: 600;
+}
+
+.detail-value {
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .type-toggle {
