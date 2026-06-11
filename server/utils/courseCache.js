@@ -1,11 +1,12 @@
 /**
  * Course Catalog Caching Utility
  * Fetches and caches course data from external API (USIS)
- * Cache expires every 24 hours
+ * Cache expires every 7 days (automatically refreshes)
+ * Can be manually refreshed anytime via API endpoint
  */
 
 const USIS_API = 'https://usis-cdn.eniamza.com/connect-migrate.json';
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const CACHE_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
 
 let cachedCourses = null;
 let cacheTimestamp = null;
@@ -38,7 +39,7 @@ function parseSchedule(scheduleStr) {
  */
 function transformCourse(rawCourse) {
   // Handle missing or undefined fields gracefully
-  const courseTitle = rawCourse.courseTitle || rawCourse.courseDetails || '';
+  const courseTitle = rawCourse.courseTitle || rawCourse.courseName || rawCourse.courseDetails || '';
   
   return {
     sectionId: rawCourse.sectionId,
@@ -46,12 +47,13 @@ function transformCourse(rawCourse) {
     courseTitle: courseTitle.toString().trim().toUpperCase(),
     sectionName: rawCourse.sectionName || rawCourse.courseDetails || '',
     courseCredit: rawCourse.courseCredit || 3,
-    instructor: rawCourse.instructor || 'N/A',
+    instructor: rawCourse.faculties || rawCourse.instructor || 'N/A',
     schedule: parseSchedule(rawCourse.preRegSchedule || ''),
     labSchedule: parseSchedule(rawCourse.preRegLabSchedule || ''),
-    examDate: rawCourse.finalExamDate || null,
-    examStartTime: rawCourse.finalExamStartTime || null,
-    examEndTime: rawCourse.finalExamEndTime || null,
+    examDate: rawCourse.sectionSchedule?.finalExamDate || rawCourse.finalExamDate || null,
+    examStartTime: rawCourse.sectionSchedule?.finalExamStartTime || rawCourse.finalExamStartTime || null,
+    examEndTime: rawCourse.sectionSchedule?.finalExamEndTime || rawCourse.finalExamEndTime || null,
+    examDetail: rawCourse.sectionSchedule?.finalExamDetail || null,
     department: rawCourse.department || 'N/A',
     semester: rawCourse.semester || null,
     status: rawCourse.status || 'Available',
@@ -157,12 +159,34 @@ function clearCache() {
  * Get cache info
  */
 function getCacheInfo() {
+  if (!cacheTimestamp) {
+    return {
+      cached: false,
+      courseCount: 0,
+      timestamp: null,
+      age: null,
+      expiresIn: null,
+      nextRefreshDate: null,
+      status: 'No cache'
+    };
+  }
+
+  const age = Date.now() - cacheTimestamp;
+  const expiresIn = Math.max(0, CACHE_DURATION - age);
+  const nextRefreshDate = new Date(cacheTimestamp + CACHE_DURATION).toLocaleString();
+  const lastCachedDate = new Date(cacheTimestamp).toLocaleString();
+  
   return {
     cached: cachedCourses !== null,
     courseCount: cachedCourses?.length || 0,
     timestamp: cacheTimestamp,
-    age: cacheTimestamp ? Date.now() - cacheTimestamp : null,
-    expiresIn: cacheTimestamp ? Math.max(0, CACHE_DURATION - (Date.now() - cacheTimestamp)) : null,
+    lastCachedDate,
+    age,
+    ageInDays: Math.floor(age / (24 * 60 * 60 * 1000)),
+    expiresIn,
+    expiresInDays: Math.ceil(expiresIn / (24 * 60 * 60 * 1000)),
+    nextRefreshDate,
+    status: `Last updated ${Math.floor(age / (60 * 60 * 1000))} hours ago`,
   };
 }
 

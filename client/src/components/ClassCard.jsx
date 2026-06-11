@@ -43,7 +43,6 @@ export default function ClassCard({ entry, onClick, timeSlots }) {
         </div>
       )}
 
-      {/* Course code */}
       <div className="course-code" style={{ color: color.text }}>
         {entry.courseCode}
       </div>

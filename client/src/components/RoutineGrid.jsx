@@ -13,8 +13,11 @@ import GridCell from './GridCell';
  * - onCardClick: (entry) => void
  * - onClearAll: () => void
  * - onEditTimeSlots: () => void
+ * - onRefreshCourses: () => void (optional)
+ * - cacheStatus: object (optional)
+ * - isRefreshing: boolean (optional)
  */
-export default function RoutineGrid({ entries, timeSlots, onCellClick, onCardClick, onClearAll, onEditTimeSlots }) {
+export default function RoutineGrid({ entries, timeSlots, onCellClick, onCardClick, onClearAll, onEditTimeSlots, onRefreshCourses, cacheStatus, isRefreshing }) {
   const gridRef = useRef(null);
 
   /**
@@ -102,7 +105,7 @@ export default function RoutineGrid({ entries, timeSlots, onCellClick, onCardCli
       {/* Toolbar */}
       <div className="toolbar">
         <div className="header-with-logo">
-          <img src="/bracu-logo.svg" alt="BRACU Logo" className="bracu-logo" />
+          <img src="/bracu.png" alt="BRACU Logo" className="bracu-logo" />
           <h1>BRACU Routine Builder</h1>
         </div>
         <div className="toolbar-buttons">
@@ -122,6 +125,17 @@ export default function RoutineGrid({ entries, timeSlots, onCellClick, onCardCli
           >
             Download PNG
           </button>
+          {onRefreshCourses && (
+            <button
+              className={`toolbar-btn btn-refresh ${isRefreshing ? 'loading' : ''}`}
+              onClick={onRefreshCourses}
+              disabled={isRefreshing}
+              title={cacheStatus ? `Last updated: ${cacheStatus.lastCachedDate}\nNext auto-refresh: ${cacheStatus.nextRefreshDate}` : 'Refresh course data'}
+              id="btn-refresh-courses"
+            >
+              {isRefreshing ? '⟳ Refreshing...' : 'Refresh Data'}
+            </button>
+          )}
           <button
             className="toolbar-btn btn-clear"
             onClick={onClearAll}
@@ -130,6 +144,13 @@ export default function RoutineGrid({ entries, timeSlots, onCellClick, onCardCli
           >
             Clear All
           </button>
+          {cacheStatus && (
+            <div className="cache-status">
+              <span className="cache-info" title={`Next refresh: ${cacheStatus.nextRefreshDate}`}>
+                {cacheStatus.status}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

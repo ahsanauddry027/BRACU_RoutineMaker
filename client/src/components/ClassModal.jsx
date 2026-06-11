@@ -193,8 +193,16 @@ export default function ClassModal({
         setShowSectionDropdown(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    
+    // Add small delay to ensure click event is processed first
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
+    
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   // Fetch catalog if not provided by parent or if empty on mount
@@ -251,8 +259,15 @@ export default function ClassModal({
     setSection(sectionOption.sectionName || '');
     setFaculty(sectionOption.instructor || '');
     
-    // Extract room from schedule (first schedule item if available)
-    const room = sectionOption.schedule?.[0]?.room || '';
+    // Extract room based on class type (THEORY vs LAB)
+    let room = '';
+    if (type === 'LAB') {
+      // For labs, use labSchedule instead of schedule
+      room = sectionOption.labSchedule?.[0]?.room || '';
+    } else {
+      // For theory, use regular schedule
+      room = sectionOption.schedule?.[0]?.room || '';
+    }
     setRoom(room);
     
     // Set exam date (convert null to empty string)
@@ -329,6 +344,10 @@ export default function ClassModal({
       }
 
       const paired = getPairedDay(theoryDayToUse);
+      
+      // Find the selected section object to pass lab info
+      const selectedSectionObject = availableSections.find(s => s.sectionName === section);
+      
       onSave({
         courseCode: finalCode,
         courseTitle: finalTitle,
@@ -341,6 +360,7 @@ export default function ClassModal({
         days: [theoryDayToUse, paired],
         startSlot: theorySlot,
         endSlot: theorySlot,
+        sectionObject: selectedSectionObject, // Pass full section for lab check
       });
     } else {
       // LAB
@@ -587,36 +607,45 @@ export default function ClassModal({
               placeholder="Select section..."
               value={section}
               onChange={(e) => setSection(e.target.value)}
+              onFocus={() => setShowSectionDropdown(true)}
               autoComplete="off"
-              style={{ marginBottom: availableSections.length > 0 ? 0 : undefined }}
+              style={{ marginBottom: showSectionDropdown ? 0 : undefined }}
             />
-            <div className="course-dropdown">
-              {availableSections.map((sec) => {
-                const roomFromSchedule = sec.schedule?.[0]?.room || 'TBD';
-                return (
-                  <div
-                    key={`section-${sec.sectionId}`}
-                    className="course-dropdown-item"
-                    onClick={() => handleSelectSection(sec)}
-                  >
-                    <div className="section-item">
-                      <div className="section-header">
-                        <span className="dropdown-code">{sec.courseCode}</span>
-                        <span className="section-name">Sec {sec.sectionName}</span>
-                      </div>
-                      <div className="section-details">
-                        <span className="detail-label">Instructor:</span>
-                        <span className="detail-value">{sec.instructor || 'N/A'}</span>
-                        <span className="detail-label">Room:</span>
-                        <span className="detail-value">{roomFromSchedule}</span>
-                        <span className="detail-label">Exam:</span>
-                        <span className="detail-value">{sec.examDate || 'TBD'} {sec.examStartTime || 'N/A'}</span>
+            {showSectionDropdown && (
+              <div className="course-dropdown">
+                {availableSections.map((sec) => {
+                  const roomFromSchedule = sec.schedule?.[0]?.room || 'TBD';
+                  const labRoom = sec.labSchedule?.[0]?.room || 'N/A';
+                  const displayRoom = type === 'LAB' ? labRoom : roomFromSchedule;
+                  return (
+                    <div
+                      key={`section-${sec.sectionId}`}
+                      className="course-dropdown-item"
+                      onClick={() => {
+                        handleSelectSection(sec);
+                        // Force close the dropdown
+                        setShowSectionDropdown(false);
+                      }}
+                    >
+                      <div className="section-item">
+                        <div className="section-header">
+                          <span className="dropdown-code">{sec.courseCode}</span>
+                          <span className="section-name">Sec {sec.sectionName}</span>
+                        </div>
+                        <div className="section-details">
+                          <span className="detail-label">Instructor:</span>
+                          <span className="detail-value">{sec.instructor || 'N/A'}</span>
+                          <span className="detail-label">Room:</span>
+                          <span className="detail-value">{displayRoom}</span>
+                          <span className="detail-label">Exam:</span>
+                          <span className="detail-value">{sec.examDate || 'TBD'} {sec.examStartTime || 'N/A'}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         ) : (
           <input

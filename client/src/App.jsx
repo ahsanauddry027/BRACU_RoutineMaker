@@ -38,6 +38,8 @@ export default function App() {
   // ─── Courses State ──────────────────────────────────
   const [customCourses, setCustomCourses] = useState([]);
   const [catalogCourses, setCatalogCourses] = useState([]);
+  const [cacheStatus, setCacheStatus] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // ─── Time Slots State ──────────────────────────────
   const [timeSlots, setTimeSlots] = useState(TIME_SLOTS);
@@ -50,6 +52,10 @@ export default function App() {
     loadCourses();
     loadCatalog();
     loadTimeSlots();
+    // Fetch cache status periodically (every minute)
+    fetchCacheStatus();
+    const cacheStatusInterval = setInterval(fetchCacheStatus, 60000);
+    return () => clearInterval(cacheStatusInterval);
   }, []);
 
   const loadEntries = async () => {
@@ -92,9 +98,45 @@ export default function App() {
       const data = await fetchCourseCatalog();
       setCatalogCourses(data);
       console.log(`✅ Loaded ${data.length} courses from catalog`);
+      // Fetch cache status after loading catalog
+      await fetchCacheStatus();
     } catch (err) {
       console.error('Failed to load course catalog:', err);
       // Don't show error to user — catalog is optional
+    }
+  };
+
+  // Fetch cache status
+  const fetchCacheStatus = async () => {
+    try {
+      const response = await fetch('/api/courses/catalog/cache-info');
+      const status = await response.json();
+      setCacheStatus(status);
+    } catch (err) {
+      console.error('Failed to fetch cache status:', err);
+    }
+  };
+
+  // Refresh course data from API
+  const handleRefreshCourseData = async () => {
+    setIsRefreshing(true);
+    try {
+      const response = await fetch('/api/courses/catalog/refresh', { method: 'POST' });
+      const result = await response.json();
+      
+      // Reload catalog with fresh data
+      await loadCatalog();
+      
+      setStatus(`✅ Course data refreshed! Loaded ${result.courseCount} courses.`);
+      setStatusType('success');
+      setTimeout(() => setStatus(''), 3000);
+    } catch (err) {
+      console.error('Failed to refresh course data:', err);
+      setStatus('❌ Failed to refresh course data');
+      setStatusType('error');
+      setTimeout(() => setStatus(''), 3000);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -182,6 +224,39 @@ export default function App() {
     setModalEntry(null);
   }, []);
 
+  // ─── Helper: Find first available lab slot ────────
+  const findAvailableLabSlot = (allEntries, excludeLabId = null) => {
+    const LAB_START_SLOTS = [1, 3, 5];
+    const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
+    
+    // Try to find an available slot starting from slot 1 on Sunday
+    for (const day of DAYS) {
+      for (const slot of LAB_START_SLOTS) {
+        const labEndSlot = slot + 1;
+        
+        // Check for conflicts with both THEORY and LAB entries
+        const isConflict = allEntries.some(e => {
+          if (excludeLabId && (e._id === excludeLabId || e.id === excludeLabId)) return false;
+          if (!e.days.includes(day)) return false;
+          
+          if (e.type === 'THEORY') {
+            // THEORY conflicts if it occupies this slot
+            if (e.startSlot === slot) return true;
+          } else if (e.type === 'LAB') {
+            // LAB conflicts if it overlaps with this lab slot
+            if (e.startSlot === slot || e.endSlot === slot || (e.startSlot < labEndSlot && e.endSlot > slot)) return true;
+          }
+          return false;
+        });
+        
+        if (!isConflict) {
+          return { day, slot };
+        }
+      }
+    }
+    return null;
+  };
+
   // ─── Save class (create or update) ─────────────────
   const handleSave = async (formData) => {
     try {
@@ -200,11 +275,69 @@ export default function App() {
         });
       } else {
         const created = await createEntry(formData);
-        setEntries((prev) => {
-          const next = [...prev, created];
-          rebuildColorMap(next);
-          return next;
-        });
+        
+        // Auto-create lab entry if this is a theory class with lab sections
+        let autoLabCreated = false;
+        if (formData.type === 'THEORY' && formData.sectionObject?.labSchedule?.length > 0) {
+          try {
+            // Build updated entries list to check for conflicts
+            const updatedEntries = [...entries, created];
+            const availableLabSlot = findAvailableLabSlot(updatedEntries);
+            
+            if (availableLabSlot) {
+              const labData = {
+                courseCode: formData.courseCode,
+                courseTitle: formData.courseTitle,
+                type: 'LAB',
+                section: formData.section,
+                faculty: formData.faculty,
+                room: formData.sectionObject.labSchedule[0]?.room || formData.room,
+                labFrequency: 'WEEKLY',
+                days: [availableLabSlot.day],
+                startSlot: availableLabSlot.slot,
+                endSlot: availableLabSlot.slot + 1,
+              };
+              
+              console.log('📋 Created theory entry:', created);
+              console.log('📋 All entries before lab creation:', updatedEntries);
+              console.log('📋 Lab data to send:', labData);
+              
+              const labCreated = await createEntry(labData);
+              autoLabCreated = true;
+              
+              setEntries((prev) => {
+                const next = [...prev, created, labCreated];
+                rebuildColorMap(next);
+                return next;
+              });
+              
+              console.log(`✅ Auto-created lab for ${formData.courseCode} section ${formData.section}`);
+            } else {
+              // No lab created, just add theory
+              setEntries((prev) => {
+                const next = [...prev, created];
+                rebuildColorMap(next);
+                return next;
+              });
+              console.warn(`⚠️ No available lab slot found for ${formData.courseCode}`);
+            }
+          } catch (labErr) {
+            console.error('Auto-create lab failed:', labErr);
+            // Don't block theory creation if lab auto-creation fails
+            setEntries((prev) => {
+              const next = [...prev, created];
+              rebuildColorMap(next);
+              return next;
+            });
+          }
+        } else {
+          // Not a theory with labs, just add the entry
+          setEntries((prev) => {
+            const next = [...prev, created];
+            rebuildColorMap(next);
+            return next;
+          });
+        }
       }
 
       // Auto-create/update exam entry if exam date is provided
@@ -443,6 +576,9 @@ export default function App() {
         onCardClick={handleCardClick}
         onClearAll={handleClearAll}
         onEditTimeSlots={() => setTimeSlotsEditorOpen(true)}
+        onRefreshCourses={handleRefreshCourseData}
+        cacheStatus={cacheStatus}
+        isRefreshing={isRefreshing}
       />
 
       {/* Status bar */}
