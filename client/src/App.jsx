@@ -320,7 +320,9 @@ export default function App() {
               const usisSlotId = mapTimeToSlot(usisLab.startTime);
               if (usisSlotId) {
                 const usisLabStart = toLABStart(usisSlotId);
-                const usisDay = usisLab.day;
+                // Normalize day to title case (e.g., "WEDNESDAY" → "Wednesday")
+                const rawDay = usisLab.day;
+                const usisDay = rawDay.charAt(0).toUpperCase() + rawDay.slice(1).toLowerCase();
                 // Check if the USIS slot is available
                 const usisLabEnd = usisLabStart + 1;
                 const usisConflict = updatedEntries.some(e => {
@@ -459,12 +461,22 @@ export default function App() {
 
   // ─── Delete class ───────────────────────────────────
   const handleDelete = async (id) => {
+    // Find the entry being deleted to check if we need to cascade-delete labs
+    const deletedEntry = entries.find((e) => (e._id || e.id) === id);
+
     try {
       setStatus('Deleting...');
       setStatusType('saving');
       await deleteEntry(id);
       setEntries((prev) => {
-        const next = prev.filter((e) => (e._id || e.id) !== id);
+        let next = prev.filter((e) => (e._id || e.id) !== id);
+        // If it's a THEORY entry, also remove associated LAB entries from state
+        // (server already cascade-deletes them from the DB)
+        if (deletedEntry?.type === 'THEORY') {
+          next = next.filter((e) =>
+            !(e.type === 'LAB' && e.courseCode === deletedEntry.courseCode && e.section === deletedEntry.section)
+          );
+        }
         rebuildColorMap(next);
         return next;
       });
@@ -478,7 +490,13 @@ export default function App() {
     } catch (err) {
       console.error('Delete failed:', err);
       setEntries((prev) => {
-        const next = prev.filter((e) => (e._id || e.id) !== id);
+        let next = prev.filter((e) => (e._id || e.id) !== id);
+        // Also remove associated labs from local state on offline delete
+        if (deletedEntry?.type === 'THEORY') {
+          next = next.filter((e) =>
+            !(e.type === 'LAB' && e.courseCode === deletedEntry.courseCode && e.section === deletedEntry.section)
+          );
+        }
         rebuildColorMap(next);
         return next;
       });

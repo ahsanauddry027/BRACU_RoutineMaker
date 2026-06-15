@@ -175,15 +175,24 @@ router.delete('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Entry not found' });
     }
 
-    // If it's a THEORY course, delete associated exams
+    // If it's a THEORY course, delete associated exams and lab entries
     if (entry.type === 'THEORY') {
       await ExamEntry.deleteMany({ courseCode: entry.courseCode });
+      // Also delete associated LAB entries for the same course and section
+      const deletedLabs = await RoutineEntry.deleteMany({
+        type: 'LAB',
+        courseCode: entry.courseCode,
+        section: entry.section,
+      });
+      if (deletedLabs.deletedCount > 0) {
+        console.log(`🗑️ Auto-deleted ${deletedLabs.deletedCount} associated lab(s) for ${entry.courseCode} section ${entry.section}`);
+      }
     }
 
     // Delete the routine entry
     await RoutineEntry.findByIdAndDelete(id);
 
-    res.json({ message: 'Entry deleted', entry });
+    res.json({ message: 'Entry deleted', entry, labsDeleted: entry.type === 'THEORY' });
   } catch (err) {
     console.error('DELETE /api/routine/:id error:', err);
     res.status(500).json({ error: 'Failed to delete routine entry' });

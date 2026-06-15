@@ -23,8 +23,11 @@ function parseSchedule(scheduleStr) {
   let match;
 
   while ((match = scheduleRegex.exec(scheduleStr)) !== null) {
+    // Normalize day to title case (e.g., "WEDNESDAY" → "Wednesday")
+    const rawDay = match[1];
+    const normalizedDay = rawDay.charAt(0).toUpperCase() + rawDay.slice(1).toLowerCase();
     matches.push({
-      day: match[1],
+      day: normalizedDay,
       startTime: match[2],
       endTime: match[3],
       room: match[4].trim(),

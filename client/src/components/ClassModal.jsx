@@ -50,6 +50,7 @@ export default function ClassModal({
   const [courseTitle, setCourseTitle] = useState('');
   const [type, setType] = useState('THEORY');
   const [section, setSection] = useState('');
+  const [selectedSectionObj, setSelectedSectionObj] = useState(null);
   const [faculty, setFaculty] = useState('');
   const [room, setRoom] = useState('');
   const [examDate, setExamDate] = useState('');
@@ -227,6 +228,7 @@ export default function ClassModal({
     setCourseCode(upper);
     setShowDropdown(true);
     setShowManualTitle(false);
+    setSelectedSectionObj(null); // Clear stored section when course changes
 
     // Auto-fill title from dictionary
     const title = allCourses[upper.trim()];
@@ -239,6 +241,7 @@ export default function ClassModal({
 
   // Select a course from dropdown (course code field)
   const handleSelectCourse = (option) => {
+    setSelectedSectionObj(null); // Clear stored section when course changes
     if (option.type === 'section') {
       // This shouldn't happen from course dropdown anymore
       setCourseCode(option.code.toUpperCase());
@@ -291,6 +294,7 @@ export default function ClassModal({
   // Select a section from the section dropdown
   const handleSelectSection = (sectionOption) => {
     setSection(sectionOption.sectionName || '');
+    setSelectedSectionObj(sectionOption); // Store full section object for lab auto-creation
     setFaculty(sectionOption.instructor || '');
     
     // Extract room based on class type (THEORY vs LAB)
@@ -303,8 +307,12 @@ export default function ClassModal({
       if (!isEdit) {
         const labInfo = sectionOption.labSchedule?.[0];
         if (labInfo) {
-          if (labInfo.day && DAYS.includes(labInfo.day)) {
-            setLabDay(labInfo.day);
+          if (labInfo.day) {
+            // Normalize day to title case (e.g., "WEDNESDAY" → "Wednesday")
+            const normalizedDay = labInfo.day.charAt(0).toUpperCase() + labInfo.day.slice(1).toLowerCase();
+            if (DAYS.includes(normalizedDay)) {
+              setLabDay(normalizedDay);
+            }
           }
           if (labInfo.startTime) {
             const slotId = mapTimeToSlotId(labInfo.startTime);
@@ -396,8 +404,9 @@ export default function ClassModal({
 
       const paired = getPairedDay(theoryDayToUse);
       
-      // Find the selected section object to pass lab info
-      const selectedSectionObject = availableSections.find(s => s.sectionName === section);
+      // Use the stored section object (set when user selected from dropdown)
+      // Fall back to searching availableSections if not stored
+      const sectionObjectToPass = selectedSectionObj || availableSections.find(s => s.sectionName === section);
       
       onSave({
         courseCode: finalCode,
@@ -411,7 +420,7 @@ export default function ClassModal({
         days: [theoryDayToUse, paired],
         startSlot: theorySlot,
         endSlot: theorySlot,
-        sectionObject: selectedSectionObject, // Pass full section for lab check
+        sectionObject: sectionObjectToPass, // Pass full section for lab check
       });
     } else {
       // LAB
@@ -655,7 +664,7 @@ export default function ClassModal({
               type="text"
               placeholder="Select section..."
               value={section}
-              onChange={(e) => setSection(e.target.value)}
+              onChange={(e) => { setSection(e.target.value); setSelectedSectionObj(null); }}
               onFocus={() => setShowSectionDropdown(true)}
               autoComplete="off"
               style={{ marginBottom: showSectionDropdown ? 0 : undefined }}
@@ -711,7 +720,7 @@ export default function ClassModal({
             type="text"
             placeholder="e.g. 13"
             value={section}
-            onChange={(e) => setSection(e.target.value)}
+            onChange={(e) => { setSection(e.target.value); setSelectedSectionObj(null); }}
           />
         )}
 
