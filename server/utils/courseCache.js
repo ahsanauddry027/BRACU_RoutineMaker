@@ -51,6 +51,7 @@ function transformCourse(rawCourse) {
     sectionName: rawCourse.sectionName || rawCourse.courseDetails || '',
     courseCredit: rawCourse.courseCredit || 3,
     instructor: rawCourse.faculties || rawCourse.instructor || 'N/A',
+    labInstructor: rawCourse.labFaculties || rawCourse.faculties || rawCourse.instructor || 'N/A',
     schedule: parseSchedule(rawCourse.preRegSchedule || ''),
     labSchedule: parseSchedule(rawCourse.preRegLabSchedule || ''),
     examDate: rawCourse.sectionSchedule?.finalExamDate || rawCourse.finalExamDate || null,

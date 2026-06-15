@@ -195,23 +195,36 @@ export default function ClassModal({
   }, [isEdit, day, slotId, localCatalogCourses, timeSlots]);
 
   // Filtered dropdown options based on search
-  // In add mode: show only courses available at the clicked day/time slot
+  // In add mode: show only slot-filtered courses by default,
+  // but search ALL courses when user types a query
   const filteredOptions = useMemo(() => {
     const search = courseCode.toUpperCase().trim();
     
-    // Use slot-filtered courses in add mode if available, otherwise all courses
-    const sourceMap = slotAvailableCourseMap || allCourses;
-    
+    // No search text: show slot-filtered courses if available
     if (!search) {
+      const sourceMap = slotAvailableCourseMap || allCourses;
       return Object.entries(sourceMap)
         .slice(0, 100)
         .map(([code, title]) => ({ type: 'course', code, title }));
     }
     
-    return Object.entries(sourceMap)
+    // User is searching: search ALL courses so any course can be found
+    // But show slot-matching courses first
+    const allMatches = Object.entries(allCourses)
       .filter(([code, title]) =>
         code.includes(search) || title.toUpperCase().includes(search)
-      )
+      );
+    
+    if (slotAvailableCourseMap) {
+      // Sort: slot-available courses first
+      allMatches.sort(([codeA], [codeB]) => {
+        const aInSlot = slotAvailableCourseMap[codeA] ? 0 : 1;
+        const bInSlot = slotAvailableCourseMap[codeB] ? 0 : 1;
+        return aInSlot - bInSlot;
+      });
+    }
+    
+    return allMatches
       .slice(0, 100)
       .map(([code, title]) => ({ type: 'course', code, title }));
   }, [courseCode, allCourses, slotAvailableCourseMap]);
@@ -755,11 +768,19 @@ export default function ClassModal({
                           <span className="detail-value">{displayRoom}</span>
                           {type === 'LAB' && sec.labSchedule?.[0] ? (
                             <>
+                              <span className="detail-label">Lab Faculty:</span>
+                              <span className="detail-value">{sec.labInstructor || sec.instructor || 'N/A'}</span>
                               <span className="detail-label">Lab:</span>
                               <span className="detail-value">{sec.labSchedule[0].day} {sec.labSchedule[0].startTime} – {sec.labSchedule[0].endTime}</span>
                             </>
                           ) : (
                             <>
+                              {sec.labSchedule?.[0] && (
+                                <>
+                                  <span className="detail-label">Lab:</span>
+                                  <span className="detail-value">{sec.labSchedule[0].day} {sec.labSchedule[0].startTime} – {sec.labSchedule[0].endTime} ({sec.labInstructor || sec.instructor || 'N/A'})</span>
+                                </>
+                              )}
                               <span className="detail-label">Exam:</span>
                               <span className="detail-value">{sec.examDate || 'TBD'} {sec.examStartTime || 'N/A'}</span>
                             </>

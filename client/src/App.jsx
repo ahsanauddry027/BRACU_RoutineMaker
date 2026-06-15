@@ -346,12 +346,14 @@ export default function App() {
             }
             
             if (labSlotToUse) {
+              // Use lab-specific instructor if available, otherwise fall back to theory faculty
+              const labFaculty = formData.sectionObject.labInstructor || formData.faculty;
               const labData = {
                 courseCode: formData.courseCode,
                 courseTitle: formData.courseTitle,
                 type: 'LAB',
                 section: formData.section,
-                faculty: formData.faculty,
+                faculty: labFaculty.trim().toUpperCase(),
                 room: formData.sectionObject.labSchedule[0]?.room || formData.room,
                 labFrequency: 'WEEKLY',
                 days: [labSlotToUse.day],
