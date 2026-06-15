@@ -282,9 +282,68 @@ export default function App() {
           try {
             // Build updated entries list to check for conflicts
             const updatedEntries = [...entries, created];
-            const availableLabSlot = findAvailableLabSlot(updatedEntries);
+
+            // Helper: Map USIS time string to nearest slot ID
+            const mapTimeToSlot = (timeStr) => {
+              if (!timeStr) return null;
+              const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+              if (!match) return null;
+              let h = parseInt(match[1]);
+              const m = parseInt(match[2]);
+              const p = match[3].toUpperCase();
+              if (p === 'PM' && h !== 12) h += 12;
+              if (p === 'AM' && h === 12) h = 0;
+              const targetMins = h * 60 + m;
+
+              let best = null, bestDiff = Infinity;
+              for (const slot of timeSlots) {
+                const sm = slot.start.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+                if (!sm) continue;
+                let sh = parseInt(sm[1]);
+                const smm = parseInt(sm[2]);
+                const sp = sm[3].toUpperCase();
+                if (sp === 'PM' && sh !== 12) sh += 12;
+                if (sp === 'AM' && sh === 12) sh = 0;
+                const diff = Math.abs(sh * 60 + smm - targetMins);
+                if (diff < bestDiff) { bestDiff = diff; best = slot.id; }
+              }
+              return best;
+            };
+
+            // Helper: Map any slot to valid lab start slot (1, 3, or 5)
+            const toLABStart = (s) => s <= 2 ? 1 : s <= 4 ? 3 : 5;
+
+            // First, try to use the actual USIS lab schedule day/time
+            let labSlotToUse = null;
+            const usisLab = formData.sectionObject.labSchedule[0];
+            if (usisLab?.day && usisLab?.startTime) {
+              const usisSlotId = mapTimeToSlot(usisLab.startTime);
+              if (usisSlotId) {
+                const usisLabStart = toLABStart(usisSlotId);
+                const usisDay = usisLab.day;
+                // Check if the USIS slot is available
+                const usisLabEnd = usisLabStart + 1;
+                const usisConflict = updatedEntries.some(e => {
+                  if (!e.days.includes(usisDay)) return false;
+                  if (e.type === 'THEORY') return e.startSlot === usisLabStart || e.startSlot === usisLabEnd;
+                  if (e.type === 'LAB') return e.startSlot === usisLabStart || e.endSlot === usisLabStart || (e.startSlot < usisLabEnd && e.endSlot > usisLabStart);
+                  return false;
+                });
+                if (!usisConflict) {
+                  labSlotToUse = { day: usisDay, slot: usisLabStart };
+                  console.log(`📋 Using USIS lab schedule: ${usisDay} slot ${usisLabStart}`);
+                } else {
+                  console.warn(`⚠️ USIS lab slot (${usisDay} slot ${usisLabStart}) conflicts, falling back`);
+                }
+              }
+            }
+
+            // Fall back to first available slot if USIS slot unavailable
+            if (!labSlotToUse) {
+              labSlotToUse = findAvailableLabSlot(updatedEntries);
+            }
             
-            if (availableLabSlot) {
+            if (labSlotToUse) {
               const labData = {
                 courseCode: formData.courseCode,
                 courseTitle: formData.courseTitle,
@@ -293,14 +352,10 @@ export default function App() {
                 faculty: formData.faculty,
                 room: formData.sectionObject.labSchedule[0]?.room || formData.room,
                 labFrequency: 'WEEKLY',
-                days: [availableLabSlot.day],
-                startSlot: availableLabSlot.slot,
-                endSlot: availableLabSlot.slot + 1,
+                days: [labSlotToUse.day],
+                startSlot: labSlotToUse.slot,
+                endSlot: labSlotToUse.slot + 1,
               };
-              
-              console.log('📋 Created theory entry:', created);
-              console.log('📋 All entries before lab creation:', updatedEntries);
-              console.log('📋 Lab data to send:', labData);
               
               const labCreated = await createEntry(labData);
               autoLabCreated = true;

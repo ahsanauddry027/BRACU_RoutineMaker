@@ -254,6 +254,40 @@ export default function ClassModal({
     }
   };
 
+  // Helper: Map a USIS time string (e.g., "02:00 PM") to the nearest slot ID
+  const mapTimeToSlotId = (timeStr) => {
+    if (!timeStr) return null;
+
+    const parseToMinutes = (t) => {
+      const match = t.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+      if (!match) return null;
+      let h = parseInt(match[1]);
+      const m = parseInt(match[2]);
+      const p = match[3].toUpperCase();
+      if (p === 'PM' && h !== 12) h += 12;
+      if (p === 'AM' && h === 12) h = 0;
+      return h * 60 + m;
+    };
+
+    const target = parseToMinutes(timeStr);
+    if (target === null) return null;
+
+    let bestSlot = null;
+    let bestDiff = Infinity;
+
+    for (const slot of timeSlots) {
+      const slotMins = parseToMinutes(slot.start);
+      if (slotMins === null) continue;
+      const diff = Math.abs(slotMins - target);
+      if (diff < bestDiff) {
+        bestDiff = diff;
+        bestSlot = slot.id;
+      }
+    }
+
+    return bestSlot;
+  };
+
   // Select a section from the section dropdown
   const handleSelectSection = (sectionOption) => {
     setSection(sectionOption.sectionName || '');
@@ -264,6 +298,23 @@ export default function ClassModal({
     if (type === 'LAB') {
       // For labs, use labSchedule instead of schedule
       room = sectionOption.labSchedule?.[0]?.room || '';
+
+      // Auto-fill lab day and time slot from USIS schedule data
+      if (!isEdit) {
+        const labInfo = sectionOption.labSchedule?.[0];
+        if (labInfo) {
+          if (labInfo.day && DAYS.includes(labInfo.day)) {
+            setLabDay(labInfo.day);
+          }
+          if (labInfo.startTime) {
+            const slotId = mapTimeToSlotId(labInfo.startTime);
+            if (slotId) {
+              const labSlot = getLabStartSlotFromClickedSlot(slotId);
+              setLabStartSlot(labSlot);
+            }
+          }
+        }
+      }
     } else {
       // For theory, use regular schedule
       room = sectionOption.schedule?.[0]?.room || '';
@@ -635,8 +686,17 @@ export default function ClassModal({
                           <span className="detail-value">{sec.instructor || 'N/A'}</span>
                           <span className="detail-label">Room:</span>
                           <span className="detail-value">{displayRoom}</span>
-                          <span className="detail-label">Exam:</span>
-                          <span className="detail-value">{sec.examDate || 'TBD'} {sec.examStartTime || 'N/A'}</span>
+                          {type === 'LAB' && sec.labSchedule?.[0] ? (
+                            <>
+                              <span className="detail-label">Lab:</span>
+                              <span className="detail-value">{sec.labSchedule[0].day} {sec.labSchedule[0].startTime} – {sec.labSchedule[0].endTime}</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="detail-label">Exam:</span>
+                              <span className="detail-value">{sec.examDate || 'TBD'} {sec.examStartTime || 'N/A'}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
