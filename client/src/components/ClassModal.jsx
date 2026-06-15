@@ -139,24 +139,82 @@ export default function ClassModal({
     return sections.slice(0, 50); // Limit to 50 sections
   }, [courseCode, coursesByCode]);
 
-  // Filtered dropdown options based on search - only courses now
+  // Helper: parse time string to minutes (used by slot filtering)
+  const parseTimeToMinutes = (t) => {
+    if (!t) return null;
+    const match = t.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (!match) return null;
+    let h = parseInt(match[1]);
+    const m = parseInt(match[2]);
+    const p = match[3].toUpperCase();
+    if (p === 'PM' && h !== 12) h += 12;
+    if (p === 'AM' && h === 12) h = 0;
+    return h * 60 + m;
+  };
+
+  // Compute courses available at the clicked day/time slot (add mode only)
+  const slotAvailableCourseMap = useMemo(() => {
+    if (isEdit || !day || !slotId || localCatalogCourses.length === 0) return null;
+
+    // Map a USIS start time to the nearest slot ID
+    const mapToSlot = (timeStr) => {
+      const target = parseTimeToMinutes(timeStr);
+      if (target === null) return null;
+      let bestSlot = null;
+      let bestDiff = Infinity;
+      for (const slot of timeSlots) {
+        const slotMins = parseTimeToMinutes(slot.start);
+        if (slotMins === null) continue;
+        const diff = Math.abs(slotMins - target);
+        if (diff < bestDiff) { bestDiff = diff; bestSlot = slot.id; }
+      }
+      return bestSlot;
+    };
+
+    const map = {};
+    for (const course of localCatalogCourses) {
+      for (const sched of (course.schedule || [])) {
+        // Normalize day for comparison
+        const schedDay = sched.day
+          ? sched.day.charAt(0).toUpperCase() + sched.day.slice(1).toLowerCase()
+          : '';
+        if (schedDay === day) {
+          const mappedSlot = mapToSlot(sched.startTime);
+          if (mappedSlot === slotId) {
+            const code = course.courseCode.toUpperCase();
+            if (!map[code]) {
+              map[code] = course.courseTitle.toUpperCase();
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    return Object.keys(map).length > 0 ? map : null;
+  }, [isEdit, day, slotId, localCatalogCourses, timeSlots]);
+
+  // Filtered dropdown options based on search
+  // In add mode: show only courses available at the clicked day/time slot
   const filteredOptions = useMemo(() => {
     const search = courseCode.toUpperCase().trim();
     
-    // Always show courses only in the course code dropdown
+    // Use slot-filtered courses in add mode if available, otherwise all courses
+    const sourceMap = slotAvailableCourseMap || allCourses;
+    
     if (!search) {
-      return Object.entries(allCourses)
+      return Object.entries(sourceMap)
         .slice(0, 100)
         .map(([code, title]) => ({ type: 'course', code, title }));
     }
     
-    return Object.entries(allCourses)
+    return Object.entries(sourceMap)
       .filter(([code, title]) =>
         code.includes(search) || title.toUpperCase().includes(search)
       )
       .slice(0, 100)
       .map(([code, title]) => ({ type: 'course', code, title }));
-  }, [courseCode, allCourses]);
+  }, [courseCode, allCourses, slotAvailableCourseMap]);
 
   // Pre-fill in edit mode
   useEffect(() => {
