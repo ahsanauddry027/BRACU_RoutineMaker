@@ -131,14 +131,86 @@ export default function ClassModal({
     return merged;
   }, [customCourses, localCatalogCourses]);
 
-  // Get available sections for selected course
+  // Get available sections for the selected course, filtered to the chosen
+  // day + time slot so only sections that actually meet then are offered.
   const availableSections = useMemo(() => {
     const search = courseCode.toUpperCase().trim();
     if (!search) return [];
-    
+
     const sections = coursesByCode[search] || [];
-    return sections.slice(0, 50); // Limit to 50 sections
-  }, [courseCode, coursesByCode]);
+
+    // Self-contained time helpers (the shared ones are declared later in the file)
+    const normalizeDay = (d) =>
+      d ? d.charAt(0).toUpperCase() + d.slice(1).toLowerCase() : '';
+    const toMinutes = (t) => {
+      if (!t) return null;
+      const m = t.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+      if (!m) return null;
+      let h = parseInt(m[1]);
+      const mm = parseInt(m[2]);
+      const p = m[3].toUpperCase();
+      if (p === 'PM' && h !== 12) h += 12;
+      if (p === 'AM' && h === 12) h = 0;
+      return h * 60 + mm;
+    };
+    const mapToSlot = (timeStr) => {
+      const target = toMinutes(timeStr);
+      if (target === null) return null;
+      let best = null;
+      let bestDiff = Infinity;
+      for (const slot of timeSlots) {
+        const sm = toMinutes(slot.start);
+        if (sm === null) continue;
+        const diff = Math.abs(sm - target);
+        if (diff < bestDiff) { bestDiff = diff; best = slot.id; }
+      }
+      return best;
+    };
+
+    // Only sections that have the component matching the active tab:
+    // THEORY tab → sections with a theory schedule; LAB tab → sections with a lab schedule.
+    const componentSections = sections.filter((sec) =>
+      type === 'LAB'
+        ? (sec.labSchedule && sec.labSchedule.length > 0)
+        : (sec.schedule && sec.schedule.length > 0)
+    );
+
+    // Which day + slot are we matching against?
+    const targetDay = type === 'LAB'
+      ? (labDay || (isEdit ? entry?.days?.[0] : null))
+      : (isEdit ? entry?.days?.[0] : day);
+    const targetSlot = type === 'LAB'
+      ? labStartSlot
+      : (isEdit ? entry?.startSlot : slotId);
+
+    // Without a target (e.g. catalog not loaded), fall back to all component sections
+    if (!targetDay || !targetSlot) return componentSections.slice(0, 50);
+
+    const matching = componentSections.filter((sec) => {
+      const sched = type === 'LAB' ? (sec.labSchedule || []) : (sec.schedule || []);
+      return sched.some((s) => {
+        if (normalizeDay(s.day) !== targetDay) return false;
+        const mapped = mapToSlot(s.startTime);
+        if (mapped === null) return false;
+        return type === 'LAB'
+          ? getLabStartSlotFromClickedSlot(mapped) === targetSlot
+          : mapped === targetSlot;
+      });
+    });
+
+    return matching.slice(0, 50);
+  }, [courseCode, coursesByCode, type, day, slotId, labDay, labStartSlot, isEdit, entry, timeSlots]);
+
+  // Does this course have catalog sections for the active tab (theory vs lab),
+  // regardless of time slot? Used to choose between the dropdown and a manual input.
+  const courseHasCatalogSections = useMemo(() => {
+    const search = courseCode.toUpperCase().trim();
+    return (coursesByCode[search] || []).some((sec) =>
+      type === 'LAB'
+        ? (sec.labSchedule && sec.labSchedule.length > 0)
+        : (sec.schedule && sec.schedule.length > 0)
+    );
+  }, [courseCode, coursesByCode, type]);
 
   // Helper: parse time string to minutes (used by slot filtering)
   const parseTimeToMinutes = (t) => {
@@ -727,9 +799,9 @@ export default function ClassModal({
           </>
         )}
 
-        {/* Section - Dropdown if sections available, otherwise text input */}
+        {/* Section - Dropdown if the course has catalog sections, otherwise text input */}
         <label htmlFor="section">Section</label>
-        {availableSections.length > 0 ? (
+        {courseHasCatalogSections ? (
           <div className="course-dropdown-wrapper" ref={sectionDropdownRef}>
             <input
               id="section"
@@ -743,10 +815,14 @@ export default function ClassModal({
             />
             {showSectionDropdown && (
               <div className="course-dropdown">
+                {availableSections.length === 0 && (
+                  <div className="course-dropdown-empty">
+                    No sections for this course meet at the selected time slot.
+                  </div>
+                )}
                 {availableSections.map((sec) => {
                   const roomFromSchedule = sec.schedule?.[0]?.room || 'TBD';
                   const labRoom = sec.labSchedule?.[0]?.room || 'N/A';
-                  const displayRoom = type === 'LAB' ? labRoom : roomFromSchedule;
                   return (
                     <div
                       key={`section-${sec.sectionId}`}
@@ -763,22 +839,38 @@ export default function ClassModal({
                           <span className="section-name">Sec {sec.sectionName}</span>
                         </div>
                         <div className="section-details">
-                          <span className="detail-label">Instructor:</span>
-                          <span className="detail-value">{sec.instructor || 'N/A'}</span>
-                          <span className="detail-label">Room:</span>
-                          <span className="detail-value">{displayRoom}</span>
-                          {type === 'LAB' && sec.labSchedule?.[0] ? (
+                          {type === 'LAB' ? (
                             <>
+                              {/* LAB tab: show the lab's own details */}
                               <span className="detail-label">Lab Faculty:</span>
                               <span className="detail-value">{sec.labInstructor || sec.instructor || 'N/A'}</span>
-                              <span className="detail-label">Lab:</span>
-                              <span className="detail-value">{sec.labSchedule[0].day} {sec.labSchedule[0].startTime} – {sec.labSchedule[0].endTime}</span>
-                            </>
-                          ) : (
-                            <>
+                              <span className="detail-label">Room:</span>
+                              <span className="detail-value">{labRoom}</span>
                               {sec.labSchedule?.[0] && (
                                 <>
                                   <span className="detail-label">Lab:</span>
+                                  <span className="detail-value">{sec.labSchedule[0].day} {sec.labSchedule[0].startTime} – {sec.labSchedule[0].endTime}</span>
+                                </>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              {/* THEORY tab: show theory timing + details. Lab (if any) is auto-added. */}
+                              <span className="detail-label">Instructor:</span>
+                              <span className="detail-value">{sec.instructor || 'N/A'}</span>
+                              <span className="detail-label">Room:</span>
+                              <span className="detail-value">{roomFromSchedule}</span>
+                              {sec.schedule?.length > 0 && (
+                                <>
+                                  <span className="detail-label">Class:</span>
+                                  <span className="detail-value">
+                                    {sec.schedule.map((s) => `${s.day} ${s.startTime} – ${s.endTime}`).join(', ')}
+                                  </span>
+                                </>
+                              )}
+                              {sec.labSchedule?.[0] && (
+                                <>
+                                  <span className="detail-label">Lab (auto):</span>
                                   <span className="detail-value">{sec.labSchedule[0].day} {sec.labSchedule[0].startTime} – {sec.labSchedule[0].endTime} ({sec.labInstructor || sec.instructor || 'N/A'})</span>
                                 </>
                               )}
