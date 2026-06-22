@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { API_ROOT } from './base';
 
-const API_BASE = '/api/settings';
+const API_BASE = `${API_ROOT}/api/settings`;
 
 export async function fetchTimeSlots() {
   const response = await axios.get(`${API_BASE}/timeslots`);

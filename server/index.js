@@ -9,6 +9,11 @@ import courseRoutes from './routes/courses.js';
 import settingsRoutes from './routes/settings.js';
 import Course from './models/Course.js';
 import { initCatalog, refreshCatalog, CACHE_TTL } from './utils/courseCache.js';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -27,6 +32,20 @@ app.use('/api/settings', settingsRoutes);
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// ─── Serve the built React app (production single-origin) ──
+// In production the client is built to client/dist; serving it here means the
+// API and the installable PWA share one HTTPS origin (so /api stays same-origin).
+const clientDist = path.join(__dirname, '..', 'client', 'dist');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  // SPA fallback: any non-API GET returns index.html
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) return next();
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+  console.log('🌐 Serving built client from client/dist');
+}
 
 // ─── 404 Handler ──────────────────────────────────────
 app.use((req, res) => {

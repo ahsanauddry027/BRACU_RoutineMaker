@@ -3,6 +3,7 @@ import RoutineGrid from './components/RoutineGrid';
 import MobileRoutine from './components/MobileRoutine';
 import InstallPrompt from './components/InstallPrompt';
 import { useIsMobile } from './hooks/useMediaQuery';
+import { API_ROOT } from './api/base';
 import ClassModal from './components/ClassModal';
 import ConfirmDialog from './components/ConfirmDialog';
 import ExamSchedule from './components/ExamSchedule';
@@ -114,7 +115,7 @@ export default function App() {
   // Fetch cache status
   const fetchCacheStatus = async () => {
     try {
-      const response = await fetch('/api/courses/catalog/cache-info');
+      const response = await fetch(`${API_ROOT}/api/courses/catalog/cache-info`);
       const status = await response.json();
       setCacheStatus(status);
     } catch (err) {
@@ -126,7 +127,7 @@ export default function App() {
   const handleRefreshCourseData = async () => {
     setIsRefreshing(true);
     try {
-      const response = await fetch('/api/courses/catalog/refresh', { method: 'POST' });
+      const response = await fetch(`${API_ROOT}/api/courses/catalog/refresh`, { method: 'POST' });
       const result = await response.json();
       
       // Reload catalog with fresh data

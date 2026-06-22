@@ -25,7 +25,15 @@
       "PowerShell(Stop-Process -Force -ErrorAction SilentlyContinue)",
       "PowerShell(\"chrome stopped\")",
       "Bash(node -e ' *)",
-      "PowerShell(\"cleaned up\")"
+      "PowerShell(\"cleaned up\")",
+      "Bash(command -v cloudflared)",
+      "Bash(command -v ngrok)",
+      "Bash(command -v npx)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 5000 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }; \"backend stopped\")",
+      "Bash(curl -s http://localhost:5000/)",
+      "Bash(curl -s -o /dev/null -w \"manifest HTTP %{http_code}\\\\n\" http://localhost:5000/manifest.webmanifest)",
+      "Bash(npx cap *)",
+      "Bash(VITE_API_URL=\"https://bracu-routine.onrender.com\" npm run build)"
     ]
   }
 }

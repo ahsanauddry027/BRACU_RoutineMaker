@@ -1,0 +1,8 @@
+{
+  "appId": "com.bracu.routine",
+  "appName": "BRACU Routine",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false
+  }
+}
