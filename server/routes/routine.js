@@ -21,11 +21,10 @@ router.post('/', async (req, res) => {
     const { courseCode, courseTitle, type, section, faculty, room, examDate, examTime, labFrequency, days, startSlot, endSlot } =
       req.body;
 
-    // Validate lab start slots (labs can only start from slots 1, 3, 5)
-    const LAB_START_SLOTS = [1, 3, 5];
-    if (type === 'LAB' && !LAB_START_SLOTS.includes(startSlot)) {
+    // A lab must span exactly 2 consecutive slots
+    if (type === 'LAB' && endSlot !== startSlot + 1) {
       return res.status(400).json({
-        error: `Labs can only start from time slots 1 (8-11 AM), 3 (11-2 PM), or 5 (2-5 PM). Received slot ${startSlot}.`,
+        error: `Labs must span exactly 2 consecutive slots. Received startSlot ${startSlot}, endSlot ${endSlot}.`,
       });
     }
 
@@ -98,11 +97,10 @@ router.put('/:id', async (req, res) => {
     const { courseCode, courseTitle, type, section, faculty, room, examDate, examTime, labFrequency, days, startSlot, endSlot } =
       req.body;
 
-    // Validate lab start slots (labs can only start from slots 1, 3, 5)
-    const LAB_START_SLOTS = [1, 3, 5];
-    if (type === 'LAB' && !LAB_START_SLOTS.includes(startSlot)) {
+    // A lab must span exactly 2 consecutive slots
+    if (type === 'LAB' && endSlot !== startSlot + 1) {
       return res.status(400).json({
-        error: `Labs can only start from time slots 1 (8-11 AM), 3 (11-2 PM), or 5 (2-5 PM). Received slot ${startSlot}.`,
+        error: `Labs must span exactly 2 consecutive slots. Received startSlot ${startSlot}, endSlot ${endSlot}.`,
       });
     }
 

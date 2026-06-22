@@ -32,6 +32,7 @@ export function rebuildColorMap(entries) {
   // Collect unique course codes in order of first appearance
   const seen = new Set();
   for (const entry of entries) {
+    if (!entry.courseCode) continue;
     const code = entry.courseCode.toUpperCase().trim();
     if (!seen.has(code)) {
       seen.add(code);

@@ -89,10 +89,15 @@ export function getLabTimeRange(startSlotId, slots = TIME_SLOTS) {
 
 /**
  * Get valid lab start slot IDs from a slots array.
- * A lab needs 2 consecutive slots, so any slot except the last is valid.
+ * A lab spans 2 consecutive slots, and starts are taken every other slot so
+ * labs tile cleanly without fragmenting the grid (e.g. 7 slots → [1, 3, 5]).
  */
 export function getLabStartSlots(slots = TIME_SLOTS) {
   if (!slots || slots.length < 2) return [];
-  // Every slot except the last one can start a lab
-  return slots.slice(0, -1).map((s) => s.id);
+  const result = [];
+  // Step by 2; stop before the last slot since a lab needs a following slot
+  for (let i = 0; i < slots.length - 1; i += 2) {
+    result.push(slots[i].id);
+  }
+  return result;
 }

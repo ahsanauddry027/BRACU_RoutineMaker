@@ -65,13 +65,11 @@ const routineEntrySchema = new mongoose.Schema(
       type: Number,
       required: [true, 'Start slot is required'],
       min: 1,
-      max: 7,
     },
     endSlot: {
       type: Number,
       required: [true, 'End slot is required'],
       min: 1,
-      max: 7,
     },
   },
   {

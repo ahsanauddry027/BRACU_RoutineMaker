@@ -9,7 +9,7 @@ import { fetchExams, createExam, updateExam, deleteExam, clearAllExams } from '.
 import { fetchCourses, createCourse, fetchCourseCatalog } from './api/courses';
 import { fetchTimeSlots, updateTimeSlots, resetTimeSlots } from './api/settings';
 import { rebuildColorMap, clearColorMap } from './utils/colors';
-import { TIME_SLOTS, isFriday } from './constants/schedule';
+import { TIME_SLOTS, isFriday, getLabStartSlots } from './constants/schedule';
 import TimeSlotEditor from './components/TimeSlotEditor';
 
 export default function App() {
@@ -226,12 +226,12 @@ export default function App() {
 
   // ─── Helper: Find first available lab slot ────────
   const findAvailableLabSlot = (allEntries, excludeLabId = null) => {
-    const LAB_START_SLOTS = [1, 3, 5];
+    const labStartSlots = getLabStartSlots(timeSlots);
     const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
-    
-    // Try to find an available slot starting from slot 1 on Sunday
+
+    // Try to find an available slot starting from the first valid start on Sunday
     for (const day of DAYS) {
-      for (const slot of LAB_START_SLOTS) {
+      for (const slot of labStartSlots) {
         const labEndSlot = slot + 1;
         
         // Check for conflicts with both THEORY and LAB entries
@@ -310,8 +310,16 @@ export default function App() {
               return best;
             };
 
-            // Helper: Map any slot to valid lab start slot (1, 3, or 5)
-            const toLABStart = (s) => s <= 2 ? 1 : s <= 4 ? 3 : 5;
+            // Helper: Map any slot to the nearest valid lab start slot at or before it
+            const labStarts = getLabStartSlots(timeSlots);
+            const toLABStart = (s) => {
+              let best = labStarts[0] || 1;
+              for (const v of labStarts) {
+                if (v <= s) best = v;
+                else break;
+              }
+              return best;
+            };
 
             // First, try to use the actual USIS lab schedule day/time
             let labSlotToUse = null;
