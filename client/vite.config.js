@@ -62,4 +62,15 @@ export default defineConfig({
       },
     },
   },
+  // `vite preview` serves the production build (with the service worker), so it
+  // needs the same API proxy — handy for testing the installable PWA on a phone.
+  preview: {
+    port: 4173,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+    },
+  },
 });

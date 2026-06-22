@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import RoutineGrid from './components/RoutineGrid';
+import MobileRoutine from './components/MobileRoutine';
+import InstallPrompt from './components/InstallPrompt';
+import { useIsMobile } from './hooks/useMediaQuery';
 import ClassModal from './components/ClassModal';
 import ConfirmDialog from './components/ConfirmDialog';
 import ExamSchedule from './components/ExamSchedule';
@@ -13,6 +16,8 @@ import { TIME_SLOTS, isFriday, getLabStartSlots } from './constants/schedule';
 import TimeSlotEditor from './components/TimeSlotEditor';
 
 export default function App() {
+  const isMobile = useIsMobile();
+
   // ─── Routine State ──────────────────────────────────
   const [entries, setEntries] = useState([]);
   const [status, setStatus] = useState('');
@@ -650,19 +655,21 @@ export default function App() {
   };
 
   // ─── Render ─────────────────────────────────────────
+  const routineProps = {
+    entries,
+    timeSlots,
+    onCellClick: handleCellClick,
+    onCardClick: handleCardClick,
+    onClearAll: handleClearAll,
+    onEditTimeSlots: () => setTimeSlotsEditorOpen(true),
+    onRefreshCourses: handleRefreshCourseData,
+    cacheStatus,
+    isRefreshing,
+  };
+
   return (
-    <div className="max-w-[1400px] mx-auto px-4 py-6">
-      <RoutineGrid
-        entries={entries}
-        timeSlots={timeSlots}
-        onCellClick={handleCellClick}
-        onCardClick={handleCardClick}
-        onClearAll={handleClearAll}
-        onEditTimeSlots={() => setTimeSlotsEditorOpen(true)}
-        onRefreshCourses={handleRefreshCourseData}
-        cacheStatus={cacheStatus}
-        isRefreshing={isRefreshing}
-      />
+    <div className={isMobile ? 'm-root' : 'max-w-[1400px] mx-auto px-4 py-6'}>
+      {isMobile ? <MobileRoutine {...routineProps} /> : <RoutineGrid {...routineProps} />}
 
       {/* Status bar */}
       {status && (
@@ -674,10 +681,14 @@ export default function App() {
       {/* Exam Schedule Section */}
       <ExamSchedule
         exams={exams}
+        isMobile={isMobile}
         onAddExam={handleAddExam}
         onEditExam={handleEditExam}
         onClearExams={handleClearAllExams}
       />
+
+      {/* PWA install affordance */}
+      <InstallPrompt />
 
       {/* Class Add/Edit Modal */}
       {modalOpen && (

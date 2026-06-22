@@ -9,7 +9,23 @@
       "Bash(node -e \"const fs=require\\('fs'\\);const b=fs.readFileSync\\('client/public/bracu.png'\\);if\\(b[0]===0x89&&b[1]===0x50\\){const w=b.readUInt32BE\\(16\\),h=b.readUInt32BE\\(20\\);console.log\\('width:',w,'height:',h\\);}else{console.log\\('not a PNG or different location'\\);}\")",
       "Bash(node -e \"const fs=require\\('fs'\\);const b=fs.readFileSync\\('bracu.png'\\);const w=b.readUInt32BE\\(16\\),h=b.readUInt32BE\\(20\\);console.log\\('root bracu.png width:',w,'height:',h\\);\")",
       "Bash(npm install *)",
-      "Bash(node scripts/generate-pwa-icons.mjs)"
+      "Bash(node scripts/generate-pwa-icons.mjs)",
+      "Bash(curl -s -o /dev/null -w \"localhost:5173 → HTTP %{http_code}\\\\n\" http://localhost:5173/)",
+      "Bash(command -v chromium-cli chromium chrome google-chrome)",
+      "Read(//c/Program Files/Google/Chrome/Application/**)",
+      "Bash(curl -s \"http://localhost:5173/src/index.css\")",
+      "Bash(npx vite *)",
+      "Bash(node -e \"const b=require\\('fs'\\).readFileSync\\('../shot-final3.png'\\);console.log\\('width',b.readUInt32BE\\(16\\),'height',b.readUInt32BE\\(20\\)\\);\")",
+      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --version)",
+      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --headless=new --disable-gpu --hide-scrollbars --user-data-dir=/tmp/chrome-cdp --window-size=390,844 --remote-debugging-port=9222 \"http://localhost:5173/\")",
+      "Bash(curl -s http://localhost:9222/json/version)",
+      "Bash(curl -s http://localhost:9222/json/list)",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{try{const a=JSON.parse\\(s\\);const p=a.find\\(x=>x.type==='page'\\);console.log\\(p?p.webSocketDebuggerUrl:'no page'\\)}catch\\(e\\){console.log\\('no endpoint'\\)}}\\)\")",
+      "PowerShell(Get-Process chrome -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(\"chrome stopped\")",
+      "Bash(node -e ' *)",
+      "PowerShell(\"cleaned up\")"
     ]
   }
 }
