@@ -4,7 +4,12 @@
       "PowerShell(Get-NetTCPConnection -LocalPort 5000 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force; \"Stopped PID $_\" })",
       "PowerShell(Get-NetTCPConnection -LocalPort 5000 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force }; \"stopped\")",
       "Bash(curl -s http://localhost:5000/api/courses/catalog)",
-      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>console.log\\('catalog length:',JSON.parse\\(s\\).length\\)\\)\")"
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>console.log\\('catalog length:',JSON.parse\\(s\\).length\\)\\)\")",
+      "Bash(ls -la client/public)",
+      "Bash(node -e \"const fs=require\\('fs'\\);const b=fs.readFileSync\\('client/public/bracu.png'\\);if\\(b[0]===0x89&&b[1]===0x50\\){const w=b.readUInt32BE\\(16\\),h=b.readUInt32BE\\(20\\);console.log\\('width:',w,'height:',h\\);}else{console.log\\('not a PNG or different location'\\);}\")",
+      "Bash(node -e \"const fs=require\\('fs'\\);const b=fs.readFileSync\\('bracu.png'\\);const w=b.readUInt32BE\\(16\\),h=b.readUInt32BE\\(20\\);console.log\\('root bracu.png width:',w,'height:',h\\);\")",
+      "Bash(npm install *)",
+      "Bash(node scripts/generate-pwa-icons.mjs)"
     ]
   }
 }
