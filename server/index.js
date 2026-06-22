@@ -8,6 +8,7 @@ import examRoutes from './routes/exams.js';
 import courseRoutes from './routes/courses.js';
 import settingsRoutes from './routes/settings.js';
 import Course from './models/Course.js';
+import { initCatalog, refreshCatalog, CACHE_TTL } from './utils/courseCache.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -84,6 +85,16 @@ const startServer = async () => {
   } catch (err) {
     console.error('Failed to initialize/migrate time slots:', err);
   }
+
+  // Warm the course catalog from MongoDB (fetch from USIS only if missing/stale)
+  await initCatalog();
+
+  // Keep the catalog current with a scheduled background refresh
+  setInterval(() => {
+    refreshCatalog().catch((err) =>
+      console.error('Scheduled catalog refresh failed:', err.message)
+    );
+  }, CACHE_TTL);
 
   app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);

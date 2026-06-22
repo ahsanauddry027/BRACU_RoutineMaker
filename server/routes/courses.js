@@ -5,7 +5,7 @@ import {
   searchCourses,
   getCoursesByDept,
   getCacheInfo,
-  clearCache,
+  refreshCatalog,
 } from '../utils/courseCache.js';
 
 const router = express.Router();
@@ -50,9 +50,9 @@ router.get('/catalog/dept/:code', async (req, res) => {
 });
 
 // GET /api/courses/catalog/cache-info — Get cache status
-router.get('/catalog/cache-info', (req, res) => {
+router.get('/catalog/cache-info', async (req, res) => {
   try {
-    const info = getCacheInfo();
+    const info = await getCacheInfo();
     res.json(info);
   } catch (err) {
     console.error('GET /api/courses/catalog/cache-info error:', err);
@@ -60,11 +60,10 @@ router.get('/catalog/cache-info', (req, res) => {
   }
 });
 
-// POST /api/courses/catalog/refresh — Manually refresh cache
+// POST /api/courses/catalog/refresh — Force a fresh fetch from USIS into MongoDB
 router.post('/catalog/refresh', async (req, res) => {
   try {
-    clearCache();
-    const courses = await fetchCourseCatalog();
+    const courses = await refreshCatalog();
     res.json({
       message: 'Cache refreshed',
       courseCount: courses.length,

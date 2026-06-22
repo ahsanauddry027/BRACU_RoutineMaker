@@ -21,7 +21,8 @@ const courseSchema = new mongoose.Schema(
   }
 );
 
-courseSchema.index({ courseCode: 1 }, { unique: true });
+// Note: the unique index on courseCode is created by `unique: true` on the
+// field above — no separate schema.index() call needed.
 
 const Course = mongoose.model('Course', courseSchema);
 
