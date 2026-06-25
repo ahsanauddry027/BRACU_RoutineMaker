@@ -33,7 +33,11 @@
       "Bash(curl -s http://localhost:5000/)",
       "Bash(curl -s -o /dev/null -w \"manifest HTTP %{http_code}\\\\n\" http://localhost:5000/manifest.webmanifest)",
       "Bash(npx cap *)",
-      "Bash(VITE_API_URL=\"https://bracu-routine.onrender.com\" npm run build)"
+      "Bash(VITE_API_URL=\"https://bracu-routine.onrender.com\" npm run build)",
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --headless=new --disable-gpu --user-data-dir=/tmp/chrome-m --remote-debugging-port=9224 \"about:blank\")",
+      "Bash(rm -f shot-mobile.png /tmp/shot.mjs /tmp/chk.mjs)"
     ]
   }
 }

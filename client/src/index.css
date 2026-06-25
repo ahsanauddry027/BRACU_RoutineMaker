@@ -1176,3 +1176,145 @@ body {
   font-weight: 700;
   font-size: 1.3rem;
 }
+
+/* ───────────────────────────────────────────────
+   Responsive — make the website usable on phones
+   (the weekly grid scrolls horizontally; everything
+   else reflows to fit a small screen)
+   ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Tighter outer padding so the grid gets more room */
+  .routine-capture-area {
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  /* Toolbar: stack the title and let the buttons fill the row */
+  .toolbar {
+    gap: 10px;
+  }
+  .toolbar h1 {
+    font-size: 1.15rem;
+  }
+  .bracu-logo {
+    height: 38px;
+    width: 38px;
+  }
+  .toolbar-buttons {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .toolbar-buttons .toolbar-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 9px 12px;
+    font-size: 0.78rem;
+  }
+  .cache-status {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Smooth momentum scrolling for the wide grid */
+  .routine-grid-wrapper,
+  .exam-table-wrapper {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Compact the grid so it needs less horizontal scrolling */
+  .routine-grid {
+    min-width: 760px;
+  }
+  .routine-grid th:first-child,
+  .routine-grid td.time-cell {
+    width: 78px;
+    min-width: 78px;
+    font-size: 0.65rem;
+  }
+  .routine-grid th {
+    font-size: 0.68rem;
+    padding: 10px 4px;
+  }
+  .routine-grid td {
+    height: 104px;
+    padding: 4px;
+  }
+  .routine-grid td.lab-cell {
+    height: 212px;
+  }
+
+  /* Smaller cards to match the tighter cells */
+  .class-card {
+    padding: 7px 8px;
+    gap: 3px;
+  }
+  .class-card .course-code {
+    font-size: 0.92rem;
+  }
+  .class-card .type-badge {
+    font-size: 0.62rem;
+    padding: 1px 5px;
+  }
+  .class-card .card-title {
+    font-size: 0.64rem;
+  }
+  .class-card .lab-time-range {
+    font-size: 0.7rem;
+  }
+
+  /* Modals become bottom sheets and stop iOS input zoom */
+  .modal-overlay,
+  .confirm-overlay {
+    align-items: flex-end;
+  }
+  .modal-content {
+    max-width: 100%;
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 18px 18px 0 0;
+    padding: 22px 18px;
+  }
+  .confirm-dialog {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 18px 18px 0 0;
+  }
+  .modal-content input,
+  .modal-content select {
+    font-size: 16px; /* prevents Safari from auto-zooming on focus */
+  }
+  .modal-actions button {
+    padding: 13px 14px;
+  }
+
+  /* Exam section: lighter padding, stacked header */
+  .exam-section {
+    padding: 16px;
+  }
+  .exam-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .exam-header h2 {
+    font-size: 1.15rem;
+  }
+  .exam-header .toolbar-buttons .toolbar-btn {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  /* Signature shouldn't overflow on tiny screens */
+  .signature {
+    font-size: 1rem;
+  }
+}
+
+/* Extra-small phones */
+@media (max-width: 400px) {
+  .toolbar h1 {
+    font-size: 1rem;
+  }
+  .routine-grid {
+    min-width: 680px;
+  }
+}
