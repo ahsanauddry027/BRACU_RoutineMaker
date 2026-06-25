@@ -1,7 +1,6 @@
 import axios from 'axios';
-import { API_ROOT } from './base';
 
-const API_BASE = `${API_ROOT}/api/courses`;
+const API_BASE = '/api/courses';
 
 // ─── External Course Catalog (USIS) ────────────────────────
 export async function fetchCourseCatalog() {

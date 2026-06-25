@@ -11,7 +11,7 @@ import { getCourseColor } from '../utils/colors';
  * - onEditExam: (exam) => void
  * - onClearExams: () => void
  */
-export default function ExamSchedule({ exams, onAddExam, onEditExam, onClearExams, isMobile = false }) {
+export default function ExamSchedule({ exams, onAddExam, onEditExam, onClearExams }) {
   // Group exams by date and detect conflicts
   const { groupedExams, conflictDates } = useMemo(() => {
     const groups = {};
@@ -94,39 +94,6 @@ export default function ExamSchedule({ exams, onAddExam, onEditExam, onClearExam
       {exams.length === 0 ? (
         <div className="exam-empty">
           <p>No exams scheduled yet. Click <strong>Add Exam</strong> to get started.</p>
-        </div>
-      ) : isMobile ? (
-        <div className="exam-cards">
-          {sortedDates.map((date) =>
-            groupedExams[date].map((exam, idx) => {
-              const isConflict = conflictDates.has(date);
-              const color = getCourseColor(exam.courseCode);
-              return (
-                <button
-                  key={exam._id || exam.id || `${date}-${idx}`}
-                  className={`exam-card ${isConflict ? 'exam-card-conflict' : ''}`}
-                  onClick={() => onEditExam(exam)}
-                >
-                  <div className="exam-card-row">
-                    <span
-                      className="exam-course-badge"
-                      style={{ backgroundColor: color.bg, borderColor: color.border, color: color.text }}
-                    >
-                      {exam.courseCode}
-                    </span>
-                    {isConflict ? (
-                      <span className="conflict-badge">⚠️ CONFLICT</span>
-                    ) : (
-                      <span className="ok-badge">✅ OK</span>
-                    )}
-                  </div>
-                  <div className="exam-card-line">📅 {formatDate(date)}</div>
-                  <div className="exam-card-line">🕐 {formatTime(exam.examTime)} &nbsp;·&nbsp; 📍 {exam.room}</div>
-                  {exam.notes && <div className="exam-card-line muted">📝 {exam.notes}</div>}
-                </button>
-              );
-            })
-          )}
         </div>
       ) : (
         <div className="exam-table-wrapper">
