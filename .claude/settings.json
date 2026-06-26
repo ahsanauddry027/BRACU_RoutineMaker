@@ -43,7 +43,11 @@
       "Bash(git add *)",
       "Bash(nslookup -type=SRV _mongodb._tcp.cluster0.ebsbzcl.mongodb.net)",
       "PowerShell(Get-NetTCPConnection -LocalPort 5000 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }; \"old server stopped\")",
-      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{const j=JSON.parse\\(s\\);console.log\\('dbCount:',j.dbCount,'| fresh:',j.fresh\\)}\\)\")"
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{const j=JSON.parse\\(s\\);console.log\\('dbCount:',j.dbCount,'| fresh:',j.fresh\\)}\\)\")",
+      "Bash(curl -s -m 60 https://bracu-routinemaker.onrender.com/api/health)",
+      "Bash(curl -s -m 60 https://bracu-routinemaker.onrender.com/)",
+      "Bash(curl -s -m 60 https://bracu-routinemaker.onrender.com/api/courses/catalog/cache-info)",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{try{const j=JSON.parse\\(s\\);console.log\\('dbCount:',j.dbCount\\)}catch\\(e\\){console.log\\(s.slice\\(0,100\\)\\)}}\\)\")"
     ]
   }
 }
