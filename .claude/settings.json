@@ -37,7 +37,13 @@
       "Bash(git commit *)",
       "Bash(git push *)",
       "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --headless=new --disable-gpu --user-data-dir=/tmp/chrome-m --remote-debugging-port=9224 \"about:blank\")",
-      "Bash(rm -f shot-mobile.png /tmp/shot.mjs /tmp/chk.mjs)"
+      "Bash(rm -f shot-mobile.png /tmp/shot.mjs /tmp/chk.mjs)",
+      "Bash(cd c:/Users/ahsan/Desktop/RoutineMaker/client && npm run build 2>&1 | tail -2 && cd ../server && node --check index.js && echo \"✅ server syntax OK\")",
+      "Read(//c/Users/ahsan/Desktop/**)",
+      "Bash(git add *)",
+      "Bash(nslookup -type=SRV _mongodb._tcp.cluster0.ebsbzcl.mongodb.net)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 5000 -State Listen -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue }; \"old server stopped\")",
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{const j=JSON.parse\\(s\\);console.log\\('dbCount:',j.dbCount,'| fresh:',j.fresh\\)}\\)\")"
     ]
   }
 }
