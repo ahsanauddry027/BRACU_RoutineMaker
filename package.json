@@ -1,0 +1,13 @@
+{
+  "name": "routinemaker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BRACU Routine Builder — MERN web app (single-service deploy)",
+  "scripts": {
+    "build": "npm install --prefix client --include=dev && npm run build --prefix client && npm install --prefix server --omit=dev",
+    "start": "npm start --prefix server"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
