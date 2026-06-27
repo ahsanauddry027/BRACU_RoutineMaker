@@ -78,14 +78,12 @@ export function getAllCourses() {
 }
 
 /**
- * Pick the faculty to show for a LAB.
- * USIS often lists the lab faculty as "TBA" (or leaves it blank) before it's
- * assigned, so in those cases fall back to the theory faculty.
+ * Pick the faculty to show for a LAB: use the lab faculty exactly as given
+ * (so "TBA" stays "TBA"). Only fall back to the theory faculty if the lab
+ * faculty field is genuinely empty/missing.
  */
 export function resolveLabFaculty(labInstructor, theoryFaculty) {
-  const lab = (labInstructor || '').trim();
-  const isReal = lab && !['TBA', 'N/A'].includes(lab.toUpperCase());
-  return isReal ? lab : (theoryFaculty || '');
+  return (labInstructor || '').trim() || (theoryFaculty || '');
 }
 
 export default COURSE_MAP;
