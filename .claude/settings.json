@@ -49,7 +49,11 @@
       "Bash(curl -s -m 60 https://bracu-routinemaker.onrender.com/api/courses/catalog/cache-info)",
       "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{try{const j=JSON.parse\\(s\\);console.log\\('dbCount:',j.dbCount\\)}catch\\(e\\){console.log\\(s.slice\\(0,100\\)\\)}}\\)\")",
       "Bash(node --check routes/exams.js)",
-      "Bash(curl -s http://localhost:5000/api/exams)"
+      "Bash(curl -s http://localhost:5000/api/exams)",
+      "Bash(git ls-remote *)",
+      "Bash(curl -s -m 60 \"https://usis-cdn.eniamza.com/connect-migrate.json\" -o usis_tmp.json)",
+      "Bash(rm -f usis_tmp.json)",
+      "Bash(curl -sL -m 60 \"https://docs.google.com/spreadsheets/d/1uCpxARIPFmkhL1BdzCL5dXmxO5CbNbFkKrgOCmUM6cA/export?format=csv&gid=2069304119\" -o sheet_tmp.csv -w \"HTTP %{http_code} | size %{size_download} bytes | type %{content_type}\\\\n\")"
     ]
   }
 }
