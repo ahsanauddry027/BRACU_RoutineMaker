@@ -9,7 +9,7 @@ import {
   getLabStartSlots,
 } from '../constants/schedule';
 import { getCourseTitleByCode, getAllCourses } from '../constants/courses';
-import { checkTheoryConflict, checkLabConflict } from '../utils/conflicts';
+import { checkTheoryConflict, checkLabConflict, findExamClash } from '../utils/conflicts';
 import { fetchCourseCatalog } from '../api/courses';
 
 /**
@@ -34,6 +34,7 @@ export default function ClassModal({
   day,
   slotId,
   entries,
+  exams = [],
   timeSlots = TIME_SLOTS,
   customCourses = [],
   catalogCourses = [],
@@ -544,6 +545,18 @@ export default function ClassModal({
       if (conflict.hasConflict) {
         setError(conflict.message);
         return;
+      }
+
+      // Block: this course's exam clashes with another course's exam (same date + time)
+      if (examDate) {
+        const effExamTime = examTime || '09:00';
+        const examClash = findExamClash(exams, examDate, effExamTime, finalCode);
+        if (examClash) {
+          setError(
+            `Exam clash: ${examClash.courseCode} already has an exam on ${examDate} at ${effExamTime}. Two courses can't share the same exam date and time.`
+          );
+          return;
+        }
       }
 
       const paired = getPairedDay(theoryDayToUse);

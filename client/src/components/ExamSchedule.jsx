@@ -3,7 +3,8 @@ import { getCourseColor } from '../utils/colors';
 
 /**
  * Exam Schedule section — displays all exams grouped by date.
- * Dates with 2+ exams are highlighted in RED as conflicts.
+ *  - Same date AND same time  → RED conflict (also blocked when adding).
+ *  - Same date, different time → YELLOW warning (allowed).
  *
  * Props:
  * - exams: array of exam entries
@@ -12,10 +13,11 @@ import { getCourseColor } from '../utils/colors';
  * - onClearExams: () => void
  */
 export default function ExamSchedule({ exams, onAddExam, onEditExam, onClearExams }) {
-  // Group exams by date and detect conflicts
-  const { groupedExams, conflictDates } = useMemo(() => {
+  // Group exams by date; flag same-date+time as conflicts and same-date as warnings
+  const { groupedExams, timeConflictKeys, warningDates } = useMemo(() => {
     const groups = {};
     const dateCounts = {};
+    const dateTimeCounts = {};
 
     for (const exam of exams) {
       if (!groups[exam.examDate]) {
@@ -24,15 +26,30 @@ export default function ExamSchedule({ exams, onAddExam, onEditExam, onClearExam
       }
       groups[exam.examDate].push(exam);
       dateCounts[exam.examDate]++;
+      const key = `${exam.examDate}__${exam.examTime}`;
+      dateTimeCounts[key] = (dateTimeCounts[key] || 0) + 1;
     }
 
-    const conflicts = new Set();
+    const timeConflicts = new Set();
+    for (const [key, count] of Object.entries(dateTimeCounts)) {
+      if (count >= 2) timeConflicts.add(key);
+    }
+    const warnings = new Set();
     for (const [date, count] of Object.entries(dateCounts)) {
-      if (count >= 2) conflicts.add(date);
+      if (count >= 2) warnings.add(date);
     }
 
-    return { groupedExams: groups, conflictDates: conflicts };
+    return { groupedExams: groups, timeConflictKeys: timeConflicts, warningDates: warnings };
   }, [exams]);
+
+  // Per-exam status: 'conflict' (same date+time) | 'warning' (same day) | 'ok'
+  const statusOf = (exam) => {
+    if (timeConflictKeys.has(`${exam.examDate}__${exam.examTime}`)) return 'conflict';
+    if (warningDates.has(exam.examDate)) return 'warning';
+    return 'ok';
+  };
+  const hasConflict = timeConflictKeys.size > 0;
+  const hasWarning = warningDates.size > 0;
 
   // Sort dates
   const sortedDates = Object.keys(groupedExams).sort();
@@ -82,11 +99,21 @@ export default function ExamSchedule({ exams, onAddExam, onEditExam, onClearExam
         </div>
       </div>
 
-      {/* Conflict legend */}
-      {conflictDates.size > 0 && (
+      {/* Legend */}
+      {(hasConflict || hasWarning) && (
         <div className="exam-conflict-legend">
-          <span className="conflict-dot"></span>
-          <span>Red rows indicate exam date conflicts (2+ exams on the same day)</span>
+          {hasConflict && (
+            <span className="legend-item">
+              <span className="conflict-dot"></span>
+              Red = conflict (two exams at the same date <strong>and</strong> time)
+            </span>
+          )}
+          {hasWarning && (
+            <span className="legend-item">
+              <span className="warning-dot"></span>
+              Yellow = same day, different time (just a heads-up)
+            </span>
+          )}
         </div>
       )}
 
@@ -111,13 +138,13 @@ export default function ExamSchedule({ exams, onAddExam, onEditExam, onClearExam
             <tbody>
               {sortedDates.map((date) =>
                 groupedExams[date].map((exam, idx) => {
-                  const isConflict = conflictDates.has(date);
+                  const status = statusOf(exam);
                   const color = getCourseColor(exam.courseCode);
 
                   return (
                     <tr
                       key={exam._id || exam.id || `${date}-${idx}`}
-                      className={`exam-row ${isConflict ? 'exam-conflict' : ''}`}
+                      className={`exam-row ${status === 'conflict' ? 'exam-conflict' : status === 'warning' ? 'exam-warning' : ''}`}
                       onClick={() => onEditExam(exam)}
                       title="Click to edit"
                     >
@@ -142,8 +169,10 @@ export default function ExamSchedule({ exams, onAddExam, onEditExam, onClearExam
                       <td className="exam-room-cell">📍 {exam.room}</td>
                       <td className="exam-notes-cell">{exam.notes || '—'}</td>
                       <td>
-                        {isConflict ? (
+                        {status === 'conflict' ? (
                           <span className="conflict-badge">⚠️ CONFLICT</span>
+                        ) : status === 'warning' ? (
+                          <span className="warning-badge">🟡 SAME DAY</span>
                         ) : (
                           <span className="ok-badge">✅ OK</span>
                         )}

@@ -125,3 +125,26 @@ export function checkConflict(entries, type, day, startSlot, excludeId = null) {
     return checkLabConflict(entries, day, startSlot, excludeId);
   }
 }
+
+/**
+ * Find an exam that hard-clashes with the given exam slot.
+ *
+ * A clash = a DIFFERENT course already has an exam at the SAME date AND the
+ * SAME time. This is blocking (two courses can't sit an exam at the same
+ * date+time). Same day but a different time is NOT a clash — that's only a
+ * warning, handled in the exam list UI.
+ *
+ * @returns the conflicting exam, or null if none.
+ */
+export function findExamClash(exams, examDate, examTime, courseCode) {
+  if (!exams || !examDate || !examTime) return null;
+  const code = (courseCode || '').toUpperCase().trim();
+  return (
+    exams.find(
+      (e) =>
+        e.examDate === examDate &&
+        e.examTime === examTime &&
+        (e.courseCode || '').toUpperCase().trim() !== code
+    ) || null
+  );
+}

@@ -18,6 +18,21 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const { courseCode, examDate, examTime, room, notes } = req.body;
+
+    // Block: a different course already has an exam at this exact date + time
+    if (examDate && examTime) {
+      const clash = await ExamEntry.findOne({
+        examDate,
+        examTime,
+        courseCode: { $ne: courseCode },
+      });
+      if (clash) {
+        return res.status(409).json({
+          error: `Exam time conflict: ${clash.courseCode} already has an exam on ${examDate} at ${examTime}.`,
+        });
+      }
+    }
+
     const exam = await ExamEntry.create({ courseCode, examDate, examTime, room, notes });
     res.status(201).json(exam);
   } catch (err) {
@@ -34,6 +49,22 @@ router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { courseCode, examDate, examTime, room, notes } = req.body;
+
+    // Block: another course already has an exam at this exact date + time
+    if (examDate && examTime) {
+      const clash = await ExamEntry.findOne({
+        _id: { $ne: id },
+        examDate,
+        examTime,
+        courseCode: { $ne: courseCode },
+      });
+      if (clash) {
+        return res.status(409).json({
+          error: `Exam time conflict: ${clash.courseCode} already has an exam on ${examDate} at ${examTime}.`,
+        });
+      }
+    }
+
     const exam = await ExamEntry.findByIdAndUpdate(
       id,
       { courseCode, examDate, examTime, room, notes },

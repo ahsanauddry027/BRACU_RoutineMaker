@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { getCourseTitleByCode, getAllCourses } from '../constants/courses';
+import { findExamClash } from '../utils/conflicts';
 
 /**
  * Modal for adding / editing / deleting an exam entry.
@@ -13,7 +14,7 @@ import { getCourseTitleByCode, getAllCourses } from '../constants/courses';
  * - onDelete: (examId) => void
  * - onClose: () => void
  */
-export default function ExamModal({ mode, exam, customCourses = [], onAddCustomCourse, onSave, onDelete, onClose }) {
+export default function ExamModal({ mode, exam, exams = [], customCourses = [], onAddCustomCourse, onSave, onDelete, onClose }) {
   const isEdit = mode === 'edit';
 
   const [courseCode, setCourseCode] = useState('');
@@ -99,8 +100,18 @@ export default function ExamModal({ mode, exam, customCourses = [], onAddCustomC
       return;
     }
 
+    // Block: another course already has an exam at this exact date + time
+    const code = courseCode.trim().toUpperCase();
+    const clash = findExamClash(exams, examDate, examTime, code);
+    if (clash) {
+      setError(
+        `Exam clash: ${clash.courseCode} already has an exam on this date at this time. Two courses can't have an exam at the same date and time.`
+      );
+      return;
+    }
+
     onSave({
-      courseCode: courseCode.trim().toUpperCase(),
+      courseCode: code,
       examDate,
       examTime,
       room: room.trim().toUpperCase(),

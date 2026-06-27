@@ -687,6 +687,7 @@ export default function App() {
           day={modalDay}
           slotId={modalSlotId}
           entries={entries}
+          exams={exams}
           timeSlots={timeSlots}
           customCourses={customCourses}
           catalogCourses={catalogCourses}
@@ -702,6 +703,7 @@ export default function App() {
         <ExamModal
           mode={examModalMode}
           exam={examModalEntry}
+          exams={exams}
           customCourses={customCourses}
           onAddCustomCourse={handleAddCustomCourse}
           onSave={handleExamSave}
