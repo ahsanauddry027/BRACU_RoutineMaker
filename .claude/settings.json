@@ -47,7 +47,9 @@
       "Bash(curl -s -m 60 https://bracu-routinemaker.onrender.com/api/health)",
       "Bash(curl -s -m 60 https://bracu-routinemaker.onrender.com/)",
       "Bash(curl -s -m 60 https://bracu-routinemaker.onrender.com/api/courses/catalog/cache-info)",
-      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{try{const j=JSON.parse\\(s\\);console.log\\('dbCount:',j.dbCount\\)}catch\\(e\\){console.log\\(s.slice\\(0,100\\)\\)}}\\)\")"
+      "Bash(node -e \"let s='';process.stdin.on\\('data',d=>s+=d\\).on\\('end',\\(\\)=>{try{const j=JSON.parse\\(s\\);console.log\\('dbCount:',j.dbCount\\)}catch\\(e\\){console.log\\(s.slice\\(0,100\\)\\)}}\\)\")",
+      "Bash(node --check routes/exams.js)",
+      "Bash(curl -s http://localhost:5000/api/exams)"
     ]
   }
 }
