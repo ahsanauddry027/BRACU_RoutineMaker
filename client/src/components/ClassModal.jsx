@@ -8,7 +8,7 @@ import {
   getLabTimeRange,
   getLabStartSlots,
 } from '../constants/schedule';
-import { getCourseTitleByCode, getAllCourses } from '../constants/courses';
+import { getCourseTitleByCode, getAllCourses, resolveLabFaculty } from '../constants/courses';
 import { checkTheoryConflict, checkLabConflict, findExamClash } from '../utils/conflicts';
 import { fetchCourseCatalog } from '../api/courses';
 
@@ -440,7 +440,12 @@ export default function ClassModal({
   const handleSelectSection = (sectionOption) => {
     setSection(sectionOption.sectionName || '');
     setSelectedSectionObj(sectionOption); // Store full section object for lab auto-creation
-    setFaculty(sectionOption.instructor || '');
+    // For a LAB, use the lab faculty (falling back to theory faculty when it's TBA/blank)
+    setFaculty(
+      type === 'LAB'
+        ? resolveLabFaculty(sectionOption.labInstructor, sectionOption.instructor)
+        : (sectionOption.instructor || '')
+    );
     
     // Extract room based on class type (THEORY vs LAB)
     let room = '';
@@ -856,7 +861,7 @@ export default function ClassModal({
                             <>
                               {/* LAB tab: show the lab's own details */}
                               <span className="detail-label">Lab Faculty:</span>
-                              <span className="detail-value">{sec.labInstructor || sec.instructor || 'N/A'}</span>
+                              <span className="detail-value">{resolveLabFaculty(sec.labInstructor, sec.instructor) || 'N/A'}</span>
                               <span className="detail-label">Room:</span>
                               <span className="detail-value">{labRoom}</span>
                               {sec.labSchedule?.[0] && (
@@ -884,7 +889,7 @@ export default function ClassModal({
                               {sec.labSchedule?.[0] && (
                                 <>
                                   <span className="detail-label">Lab (auto):</span>
-                                  <span className="detail-value">{sec.labSchedule[0].day} {sec.labSchedule[0].startTime} – {sec.labSchedule[0].endTime} ({sec.labInstructor || sec.instructor || 'N/A'})</span>
+                                  <span className="detail-value">{sec.labSchedule[0].day} {sec.labSchedule[0].startTime} – {sec.labSchedule[0].endTime} ({resolveLabFaculty(sec.labInstructor, sec.instructor) || 'N/A'})</span>
                                 </>
                               )}
                               <span className="detail-label">Exam:</span>

@@ -10,6 +10,7 @@ import { fetchCourses, createCourse, fetchCourseCatalog } from './api/courses';
 import { fetchTimeSlots, updateTimeSlots, resetTimeSlots } from './api/settings';
 import { rebuildColorMap, clearColorMap } from './utils/colors';
 import { TIME_SLOTS, isFriday, getLabStartSlots } from './constants/schedule';
+import { resolveLabFaculty } from './constants/courses';
 import TimeSlotEditor from './components/TimeSlotEditor';
 
 export default function App() {
@@ -354,8 +355,8 @@ export default function App() {
             }
             
             if (labSlotToUse) {
-              // Use lab-specific instructor if available, otherwise fall back to theory faculty
-              const labFaculty = formData.sectionObject.labInstructor || formData.faculty;
+              // Use the lab faculty if assigned, otherwise fall back to theory faculty
+              const labFaculty = resolveLabFaculty(formData.sectionObject.labInstructor, formData.faculty);
               const labData = {
                 courseCode: formData.courseCode,
                 courseTitle: formData.courseTitle,
